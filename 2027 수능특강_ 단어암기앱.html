@@ -1,0 +1,2680 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>미사이든학원 플래시카드 학습장</title>
+    <style>
+        * { box-sizing: border-box; font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif; }
+        body { background-color: #f0f2f5; margin: 0; padding: 10px 20px; display: flex; flex-direction: column; align-items: center; overscroll-behavior: none; overflow-x: hidden; }
+
+        .app-container { max-width: 800px; width: 100%; background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+
+        .book-title { text-align: center; font-size: 22px; font-weight: 800; color: #1a237e; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid #e0e7ff; }
+
+        .controls-header { display: flex; flex-wrap: nowrap; gap: 8px; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+        .controls-group { display: flex; align-items: center; gap: 8px; flex-wrap: nowrap; }
+        select, .btn-size { padding: 6px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; background: white; }
+        .toggle-switch { display: flex; align-items: center; gap: 4px; cursor: pointer; font-size: 13px; white-space: nowrap; }
+        
+        .btn-size { background: #f8f9fa; cursor: pointer; }
+        .btn-size.active { background: #e0e7ff; border-color: #4f46e5; color: #4f46e5; font-weight: bold; }
+
+        .review-panel { display: flex; gap: 8px; align-items: center; justify-content: center; background: #fff8e1; padding: 8px 12px; border-radius: 8px; border: 1px dashed #ffb300; margin-bottom: 10px; flex-wrap: nowrap; }
+        .review-panel-title { font-size: 13px; color: #d84315; font-weight: bold; margin-right: 5px; white-space: nowrap; }
+        .btn-review { border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: bold; transition: 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.05); white-space: nowrap; }
+        .btn-review.unknown { background: #ffebee; color: #c62828; border: 1px solid #ef9a9a; }
+        .btn-review.confused { background: #fff3e0; color: #e65100; border: 1px solid #ffcc80; }
+        .btn-review:active { transform: scale(0.95); }
+        .btn-review:hover { opacity: 0.8; }
+
+        .counter { text-align: center; color: #666; margin-bottom: 5px; font-size: 14px; font-weight: bold; }
+        
+        .scene { perspective: 1000px; width: 100%; height: 320px; margin-bottom: 15px; cursor: pointer; touch-action: none; position: relative; }
+        .card-wrapper { width: 100%; height: 100%; transition: transform 0.3s cubic-bezier(0.4, 0.2, 0.2, 1), opacity 0.3s ease; }
+        
+        .fly-out-left { transform: translateX(-150%) rotate(-15deg); opacity: 0; }
+        .fly-out-right { transform: translateX(150%) rotate(15deg); opacity: 0; }
+        .fly-out-up { transform: translateY(-150%) rotate(10deg); opacity: 0; }
+        .fly-out-down { transform: translateY(150%) rotate(-10deg); opacity: 0; }
+
+        .card { width: 100%; height: 100%; position: relative; transition: transform 0.5s cubic-bezier(0.4, 0.2, 0.2, 1); transform-style: preserve-3d; pointer-events: none; }
+        .card.is-flipped { transform: rotateY(180deg); }
+        
+        .card__face { 
+            position: absolute; width: 100%; height: 100%; backface-visibility: hidden; 
+            display: flex; flex-direction: column; align-items: center; justify-content: center; 
+            background: #e3f2fd; 
+            border-radius: 12px; 
+            box-shadow: 0 10px 25px rgba(0,0,0,0.25), 0 5px 10px rgba(0,0,0,0.15); 
+            border: 2px solid #90caf9; 
+            padding: 20px; text-align: center; 
+        }
+        .card__face--back { 
+            transform: rotateY(180deg); 
+            background-color: #bbdefb; 
+            border: 2px solid #64b5f6; 
+        }
+
+        .word-text { font-weight: bold; margin: 0; word-break: keep-all; line-height: 1.3; transition: font-size 0.2s; pointer-events: auto; user-select: none; color: #1a237e; }
+        
+        /* 🔥 음성 듣기 버튼 디자인 */
+        .speak-btn {
+            background: #ffffff; color: #1976d2; border: 1px solid #64b5f6; 
+            padding: 6px 14px; border-radius: 20px; font-size: 14px; font-weight: bold; 
+            cursor: pointer; pointer-events: auto; margin-top: 15px; 
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1); transition: 0.2s;
+            display: flex; align-items: center; gap: 5px;
+        }
+        .speak-btn:hover { background: #e3f2fd; }
+        .speak-btn:active { transform: scale(0.95); }
+
+        .badge-category { 
+            position: absolute; 
+            bottom: 20px; 
+            left: 50%; 
+            transform: translateX(-50%); 
+            background: white; color: #1976d2; padding: 6px 16px; border-radius: 20px; font-size: 14px; font-weight: bold; pointer-events: auto; border: 1px solid #1976d2; 
+        }
+
+        .word-text.font-small { font-size: 24px; }
+        .word-text.font-medium { font-size: 36px; }
+        .word-text.font-large { font-size: 48px; }
+        .word-text.font-xlarge { font-size: 64px; }
+        .word-text.font-xxlarge { font-size: 80px; }
+
+        .nav-buttons { display: flex; justify-content: center; gap: 8px; margin-bottom: 15px; }
+        .btn-nav { background: #4285f4; color: white; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer; font-size: 15px; font-weight: bold; flex: 1; max-width: 130px; transition: 0.2s; white-space: nowrap; }
+        .btn-nav:hover { background: #3367d6; }
+
+        .eval-buttons { display: flex; justify-content: center; gap: 10px; margin-bottom: 15px; flex-wrap: nowrap; }
+        .btn-eval { padding: 8px 15px; border-radius: 6px; cursor: pointer; font-size: 15px; font-weight: bold; transition: 0.2s; flex: 1; max-width: 140px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .btn-eval:active { transform: scale(0.95); }
+        .btn-eval.unknown { background: #ffebee; border: 1px solid #ef9a9a; color: #c62828; }
+        .btn-eval.confused { background: #fff8e1; border: 1px solid #ffe082; color: #f57f17; }
+        .btn-eval.known { background: #e8f5e9; border: 1px solid #a5d6a7; color: #2e7d32; }
+
+        .eval-count { font-size: 13px; font-weight: normal; margin-top: 2px; opacity: 0.85; }
+
+        .shortcuts { text-align: center; font-size: 12px; color: #888; border-top: 1px solid #eee; padding-top: 10px; margin-bottom: 15px; line-height: 1.5; }
+
+        .history-controls { display: flex; gap: 10px; margin-bottom: 10px; flex-wrap: nowrap; }
+        .history-toggle-btn { flex: 2; background: #607d8b; color: white; border: none; padding: 10px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: bold; white-space: nowrap; }
+        .history-toggle-btn:hover { background: #455a64; }
+        .history-download-btn { flex: 1; background: #2e7d32; color: white; border: none; padding: 10px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: bold; min-width: 120px; white-space: nowrap; }
+        .history-download-btn:hover { background: #1b5e20; }
+        
+        .history-container { width: 100%; overflow-x: auto; max-height: 300px; border: 1px solid #ddd; border-radius: 6px; display: none; }
+        .history-table { width: 100%; border-collapse: collapse; font-size: 13px; text-align: center; white-space: nowrap; }
+        .history-table th, .history-table td { border: 1px solid #ddd; padding: 8px; }
+        .history-table th { background-color: #4285f4; color: white; position: sticky; top: 0; font-weight: bold; z-index: 1; }
+        
+        .history-table tr.bg-unknown td { background-color: #ffebee; } 
+        .history-table tr.bg-confused td { background-color: #fff9c4; } 
+        .history-table tr.bg-known td { background-color: #e8f5e9; } 
+
+        .footer-copyright {
+            text-align: center;
+            font-size: 12px;
+            color: #777;
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px solid #eaeaea;
+            line-height: 1.6;
+            background: #fafafa;
+            border-radius: 8px;
+            padding: 15px;
+        }
+        .footer-copyright strong { color: #333; font-size: 13px; }
+        .footer-provider { display: inline-block; margin-top: 5px; padding: 4px 12px; background: #e8eaf6; color: #3f51b5; border-radius: 20px; font-weight: bold; font-size: 12px; }
+
+        @media (max-width: 600px) {
+            .controls-header { flex-wrap: wrap; justify-content: center; gap: 10px; }
+            .review-panel { flex-wrap: nowrap; padding: 8px 5px; gap: 4px; }
+            .review-panel-title { font-size: 12px; margin-right: 0; }
+            .btn-review { font-size: 12px; padding: 6px 8px; min-width: 0; }
+            .scene { height: 280px; }
+            .word-text.font-xxlarge { font-size: 50px; } 
+        }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    <div id="mainApp">
+        <div class="book-title">
+            📚 워드마스터 수능 2000
+        </div>
+
+        <div class="controls-header">
+            <div class="controls-group">
+                <select id="categorySelect" onchange="filterData()">
+                    <option value="all">모든 단원</option>
+                </select>
+                <select id="statusSelect" onchange="filterData()">
+                    <option value="all">전체 상태</option>
+                    <option value="비어있음">비어있음</option>
+                    <option value="모름">❌ 모름</option>
+                    <option value="헷갈림">⚠️ 헷갈림</option>
+                    <option value="알았음">✅ 알았음</option>
+                </select>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="qaToggle" checked onchange="updateCardDisplay()">
+                    <span>질문↔답변</span>
+                </label>
+            </div>
+            
+            <div class="controls-group">
+                <span style="font-size: 13px; color: #555; font-weight: bold;">크기:</span>
+                <button class="btn-size" onclick="setFontSize('small', this)">소</button>
+                <button class="btn-size" onclick="setFontSize('medium', this)">중</button>
+                <button class="btn-size active" onclick="setFontSize('large', this)">대</button>
+                <button class="btn-size" onclick="setFontSize('xlarge', this)">특대</button>
+                <button class="btn-size" onclick="setFontSize('xxlarge', this)">초대</button>
+            </div>
+        </div>
+
+        <div class="review-panel">
+            <span class="review-panel-title">💡 집중 복습:</span>
+            <button class="btn-review unknown" onclick="startReview('모름')">❌ 모른 단어</button>
+            <button class="btn-review confused" onclick="startReview('헷갈림')">⚠️ 헷갈린 단어</button>
+        </div>
+
+        <div id="counter" class="counter">0 / 0</div>
+
+        <div class="scene" id="cardScene">
+            <div class="card-wrapper" id="cardWrapper">
+                <div class="card" id="flashcard">
+                    <div class="card__face card__face--front">
+                        <div id="frontText" class="word-text font-large"></div>
+                        <!-- 🔥 앞면 음성 버튼 추가 -->
+                        <button id="frontSpeakBtn" class="speak-btn" onclick="playAudio(event, this.dataset.text)">🔊 발음 듣기</button>
+                        <div id="frontCategory" class="badge-category"></div>
+                    </div>
+                    <div class="card__face card__face--back">
+                        <div id="backText" class="word-text font-large"></div>
+                        <!-- 🔥 뒷면 음성 버튼 추가 -->
+                        <button id="backSpeakBtn" class="speak-btn" onclick="playAudio(event, this.dataset.text)">🔊 발음 듣기</button>
+                        <div id="backCategory" class="badge-category"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="nav-buttons">
+            <button class="btn-nav" onclick="handlePrevCard()">← 이전</button>
+            <button class="btn-nav" onclick="shuffleCards()" style="background-color: #555;">🔀 섞기</button>
+            <button class="btn-nav" onclick="handleNextCard()">다음 →</button>
+        </div>
+
+        <div class="eval-buttons">
+            <button class="btn-eval unknown" onclick="handleEvaluation('모름', 'left')">
+                <span>❌ 모름</span>
+                <span class="eval-count" id="count-unknown">0</span>
+            </button>
+            <button class="btn-eval confused" onclick="handleEvaluation('헷갈림', 'up')">
+                <span>⚠️ 헷갈림</span>
+                <span class="eval-count" id="count-confused">0</span>
+            </button>
+            <button class="btn-eval known" onclick="handleEvaluation('알았음', 'right')">
+                <span>✅ 알았음</span>
+                <span class="eval-count" id="count-known">0</span>
+            </button>
+        </div>
+
+        <div class="shortcuts">
+            <b>제스처:</b> 👈(모름) | 👉(알았음) | 👆(헷갈림) | 👇(이전)<br>
+            <b>단축키:</b> 스페이스바/↑↓(뒤집기) | ← →(이동) | 1, 2, 3(평가)
+        </div>
+
+        <div class="history-controls">
+            <button class="history-toggle-btn" onclick="toggleHistory()">📊 기록 표 보기</button>
+            <button class="history-download-btn" onclick="downloadCSV()">📥 CSV 저장</button>
+        </div>
+        
+        <div id="historyContainer" class="history-container">
+            <table class="history-table">
+                <thead>
+                    <tr>
+                        <th>단원</th>
+                        <th>문제</th>
+                        <th>정답</th>
+                        <th>상태</th>
+                        <th>학습일시</th>
+                    </tr>
+                </thead>
+                <tbody id="historyTableBody">
+                </tbody>
+            </table>
+        </div>
+
+        <div class="footer-copyright">
+            <strong>ⓒ 2026 <span style="font-size: 0.85em;">엠베스트se</span>미사이든학원 (이든관리형학습센터). All rights reserved.</strong><br>
+            📍 위치: 미사강변대로 80 그린프라자 7층 | 📞 상담문의: 010-8442-2817<br>
+            <div class="footer-provider">Provided by 황붕주 원장</div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    // 🔥 아래의 백틱(\`) 사이에 원장님의 단어 CSV 텍스트를 복사해서 그대로 붙여넣어주세요!
+    const rawCSVData = `단어,뜻,단원
+diversity,다양성,01강
+enrich,풍요롭게 하다,01강
+unique,특별한,01강
+unity,"화합, 통합",01강
+revision,수정,01강
+manuscript,원고,01강
+cooperation,협조,01강
+thoroughly,철저하게,01강
+insightful,통찰력 있는,01강
+critical,중요한,01강
+incorporate,"포함하다, 통합하다",01강
+mention,언급하다,01강
+briefly,잠시,01강
+complaint,불만,01강
+wedding anniversary,결혼기념일,01강
+lifeless,생기가 없는,01강
+spotted,얼룩진,01강
+compensation,보상,01강
+refund,환불,01강
+settle into,~에 자리 잡다,01강
+enthusiastic,열정적인,01강
+tiresome,지루한,01강
+all in all,대체로,01강
+repayment,상환,01강
+loan,대출금,01강
+transportation,교통수단,01강
+translate,통역하다,01강
+immigration,"이민국, 이민",01강
+document,서류,01강
+property,"재산, 소유물",01강
+ignore,무시하다,01강
+rejection,거절,01강
+ridiculous,말도 안 되는,01강
+show off,~을 과시하다,01강
+superior,"우월한, 우세한",01강
+dizzy,어지러운,01강
+pack,배낭,01강
+assistance,"도움, 원조",01강
+hut,"산장, 오두막",01강
+guilt,죄책감,01강
+blend,섞이다,01강
+precious,소중한,01강
+possession,소유물,01강
+comfort,"위로, 편안",01강
+interrupt,"중단하다, 방해하다",01강
+roar,굉음,01강
+weapon,무기,01강
+whisper,속삭이다,01강
+urgently,다급하게,01강
+trunk,"(나무의) 몸통, 나무 줄기",01강
+prayer,기도,01강
+initially,처음에,01강
+commute,통근,01강
+cruel,"가혹한, 힘든",01강
+irony,"얄궂음, 아이러니",01강
+translate,통역하다,02강
+immigration,"이민국, 이민",02강
+document,서류,02강
+dizzy,어지러운,02강
+rejection,거절,02강
+assistance,"도움, 원조",02강
+guilt,죄책감,02강
+complaint,불만,02강
+wedding anniversary,결혼기념일,02강
+compensation,보상,02강
+blend,섞이다,02강
+precious,소중한,02강
+possession,소유물,02강
+comfort,"위로, 편안",02강
+interrupt,"중단하다, 방해하다",02강
+roar,굉음,02강
+weapon,무기,02강
+whisper,속삭이다,02강
+urgently,다급하게,02강
+trunk,"(나무의) 몸통, 나무 줄기",02강
+prayer,기도,02강
+settle into,~에 자리 잡다,02강
+enthusiastic,열정적인,02강
+tiresome,지루한,02강
+all in all,대체로,02강
+repayment,상환,02강
+loan,대출금,02강
+transportation,교통수단,02강
+initially,처음에,02강
+commute,통근,02강
+cruel,"가혹한, 힘든",02강
+irony,"얄궂음, 아이러니",02강
+signify,의미하다,03강
+populate,"살다, 거주하다",03강
+imagery,심상,03강
+representation,표상,03강
+interweave,"얽다, 섞어 짜다",03강
+occupation,(특히 즐거움을 위해 시간을 보내는 특정한) 활동,03강
+microclimate,"미기후(微氣候: 특히 주변 다른 지역과는 다른, 특정 좁은 지역의 기후)",03강
+scale,"수준, 규모",03강
+legendary,"유명한, 전설적인",03강
+harsh,"혹독한, 가혹한",03강
+lettuce,상추,03강
+bank,둑을 쌓다,03강
+approximately,"약, ~ 정도",03강
+flat,평평한,03강
+capture,"획득하다, 손에 넣다",03강
+fraction,부분,03강
+fuel,연료를 공급하다,03강
+advancement,"발전, 진보",03강
+inject,주입하다,03강
+promotion,승진,03강
+manipulation,조작,03강
+loyalty,충성심,03강
+repeat business,"재방문 고객, 재구매 고객",03강
+turn down,거절하다,03강
+astronaut,우주 비행사,03강
+inspire,영감을 주다,03강
+cause,대의명분,03강
+engagement,"관여, 참여",03강
+journalist,언론인,03강
+relevant,관련성 있는,03강
+abandon,"버리다, 포기하다",03강
+accountable,책임 있는,03강
+democratization,민주화,03강
+disruption,"(기술) 격변, 혼란",03강
+retake,되찾다,03강
+corporate,기업의,03강
+shareholder,주주,03강
+shift,이동시키다,03강
+broadcaster,방송사,03강
+critically,중요하게,03강
+gatekeeper,문지기,03강
+trap,가두다,03강
+pen,쓰다,03강
+statement,"말, 진술",03강
+nothing but,"다름 아닌 ~, ~일 뿐인",03강
+myth,근거 없는 믿음,03강
+valid,"타당한, 근거 있는",03강
+commitment,"전념, 헌신",03강
+comet,혜성,03강
+antibiotic,항생제,03강
+immunization,예방 접종,03강
+accomplishment,"성과, 업적",03강
+intuition,"직관(력), 직감",03강
+testing,"검증, 테스트(하기)",03강
+confirm,입증[확증]하다,03강
+disprove,반증하다,03강
+reject,"거부하다, 거절하다",03강
+alter,변경하다,03강
+hypothesis,가설,03강
+justification,"구실, 변명, 정당화",03강
+hold to,~을 고수하다,03강
+instinctively,"본능적으로, 직관적으로",03강
+absolute,"절대적인, 확실한",03강
+must,절대 필요한 것,03강
+ultimate,"최종적인, 궁극적인",03강
+awkwardness,어색함,03강
+dread,두려움,03강
+normal,정상적인,03강
+internal,내면의,03강
+anxiety,불안,03강
+boost,향상하다,03강
+icebreaker,어색함을 푸는 말[행동],03강
+lifeline,생명선,03강
+insecure,불안한,03강
+empathy,공감,03강
+flip,"바꾸다, 뒤집다",03강
+compassion,연민,03강
+inherent,내재하는,03강
+soaked,흠뻑 젖은,04강
+scent,향기,04강
+unassuming,겸손한,04강
+ease,덜어 주다,04강
+blend,혼합하다,04강
+accumulate,축적하다,04강
+countless,셀 수 없이 많은,04강
+pitiless,무자비한,04강
+phenomenon(pl. phenomena),현상,04강
+natural selection,자연 선택,04강
+blueprint,"설계도, 청사진",04강
+dictator,"절대 권력자, 독재자",04강
+blessing,축복,04강
+deadly,치명적인,04강
+vehicle,매개물,04강
+sequence,"순서, 차례",04강
+crop,작물,04강
+solar,태양의,04강
+filter,여과하다,04강
+concentrate,농축시키다,04강
+constant,일정한,04강
+civilization,문명,04강
+flourish,번영[번성]하다,04강
+sophisticated,정교한,04강
+critically,비판적으로,04강
+long-held,오랫동안 간직해 온,04강
+controversial,"논쟁의 여지가 있는, 논란이 많은",04강
+assumption,"(근거 없는) 가정, 추정",04강
+challenge,"의심하다, 이의를 제기하다",04강
+symbolic logic,기호 논리학,04강
+gravity,중력,04강
+to the core,"송두리째, 완전히",04강
+overwhelming,압도적인,05강
+comprehend,이해하다,05강
+much less,"~은 고사하고, ~하기는커녕",05강
+interfere with,~을 방해하다,05강
+overcome,극복하다,05강
+oversized,너무 큰,05강
+identify,"파악하다, 확인하다, 식별하다",05강
+break down,~을 나누다,05강
+manageable,감당할 수 있는,05강
+revisit,재검토하다,05강
+distribution,"분포, 분배",05강
+portfolio,포트폴리오(개인이나 기관의 유가 증권 보유 일람표),05강
+nutrition,영양,05강
+herb,약초,05강
+regulatory,규제의,05강
+misleading,오해의 소지가 있는,05강
+reputable,평판이 좋은,05강
+devoted to,~에 전념하는,05강
+medical facility,의료 시설,05강
+embrace,받아들이다,05강
+servant leader,섬기는 리더,05강
+polish,닦다,05강
+flour,밀가루,05강
+assume,"생각하다, 추정하다",05강
+sweep,쓸다,05강
+be above -ing,~을 부끄럽다고 생각해 하지 않다,05강
+activate,활성화하다,05강
+acceptable,수용 가능한,05강
+athlete,운동선수,05강
+downshift,속도를 줄이다,05강
+resolve,해결하다,05강
+fight-or-flight state,투쟁/도피 상태(위협을 받으면 심신이 즉각 반응하는 생리적·심리적 상태),05강
+introduction,"유입, 소개",05강
+compatible,"양립될 수 있는, 호환 가능한",06강
+distinction,구분,06강
+alien,"외국인, 이방인",06강
+abandon,폐지하다,06강
+restrict,제한하다,06강
+democracy,민주주의,06강
+convincing,설득력 있는,06강
+voice,"발언권, 의견, 목소리",06강
+abstract,추상적인,06강
+rubbish,폐기물,06강
+interpret,해석하다,06강
+inclined to do,~하고 싶어 하는,06강
+materialistic,물질주의적인,06강
+fascination,매료됨,06강
+behaviorism,행동주의,06강
+metaphor,은유,06강
+cultural anthropology,문화 인류학,06강
+founder,창시자,06강
+cognitive psychology,인지 심리학,06강
+shift,"전환, 변화",06강
+construction,구성,06강
+reflection,성찰,06강
+humanistic,인본주의적인,06강
+emphasis,강조,06강
+essential,필수적인,06강
+ingredient,"요인, 구성 요소",06강
+cognition,인지,06강
+escape,도피,06강
+identification,동일시,06강
+comparison,비교,06강
+activate,활성화하다,06강
+alternative,대안의,06강
+as opposed to,"~과 반대로, ~과는 달리",06강
+perception,"지각, 인식",06강
+reverse,"역전시키다, 거꾸로 하다",06강
+translate,번역하다,06강
+musical instrument,악기,07강
+figure,수치,07강
+dramatically,극적으로,07강
+utter,완전한,07강
+nonsense,터무니없는 것,07강
+innate,타고난,07강
+draw,(무작위) 추첨,07강
+ensure,보장하다,07강
+beverage,음료,07강
+distribution,"유통, 분배",07강
+capacity,역량,07강
+at the expense of,~을 희생하여,07강
+fit,들어맞다,07강
+priority,우선순위,07강
+dismiss,일축하다,07강
+thirst,갈증,07강
+negotiator,협상가,07강
+justify,정당화하다,07강
+on the grounds that,~라는 이유로,07강
+component,구성 요소,07강
+ingredient,"재료, 원료",07강
+symposium,"학술 토론회, 심포지엄",07강
+bold,대담한,07강
+freehand,손으로만 그린,07강
+transition,전환,07강
+entail,수반하다,07강
+precision,정밀성,07강
+lock in,고정되다,07강
+cognitively,인지적으로,07강
+bypass,건너뛰다,07강
+reflective,성찰적인,07강
+spring from,~에서 비롯되다,07강
+phenomenon,현상,07강
+disincentive,의욕을 꺾는 것,07강
+interconnectedness,상호 연결성,07강
+emphasize,강조하다,07강
+experimentation,실험,07강
+at the expense of,~을 희생하여,07강
+be derived from,~에서 유래하다,07강
+feature film,장편 영화,07강
+depict,"묘사하다, 그리다",07강
+simulation,"흉내, 가장",07강
+symbolism,상징성,07강
+suspension,"유예, 보류",07강
+bound,얽매인,07강
+devoted to,~에 전념하는,07강
+ground-breaking,획기적인,07강
+housing,주택,08강
+accommodation,숙소,08강
+destination,목적지,08강
+account for,~을 차지하다,08강
+opposite,반대의,08강
+outlook,전망,08강
+income,"소득, 수입",08강
+adoption,채택,08강
+outnumber,~보다 수가 더 많다,08강
+foresee,예상하다,08강
+figure,"수치, 숫자",08강
+share,비율,08강
+engage in,~에 참여하다,08강
+occasionally,가끔,08강
+commonly,흔하게,08강
+respondent,응답자,08강
+generate,발생시키다,08강
+appliance,"기기, 가전제품",08강
+exceed,초과하다,08강
+equipment,"장비, 장치",08강
+approximately,"약, 대략",08강
+chemistry,화학,09강
+distinguished,"저명한, 매우 성공한",09강
+conduct,진행하다,09강
+substance,물질,09강
+mixture,혼합물,09강
+blossom,피어나다,09강
+vibrant,생생한,09강
+affordable,저렴하게 구할 수 있는,09강
+abandon,버리다,09강
+persuade,설득하다,09강
+construct,건설하다,09강
+textile,"옷감, 직물",09강
+outstanding,"중요한, 뛰어난",09강
+portrait,초상화,09강
+mentor,스승,09강
+biblical,성경의,09강
+interpretation,해석,09강
+geology,지질학,09강
+bachelor’s degree,학사 학위,09강
+pursue,(공부·연구·논의 등을) 계속하다,09강
+term,임기,09강
+committed,전념하는,09강
+compassion,연민,09강
+discrimination,차별,09강
+aid,돕다,09강
+assistance,도움,09강
+shelter,보호하다,09강
+honor,서훈하다,09강
+dedicate,헌신하다,09강
+underserved,서비스가 충분하지 못한,09강
+establish,설립하다,09강
+clinic,"병원, 병동",09강
+pass away,사망하다,09강
+inner,내면의,10강
+strength,힘,10강
+ancient,고대의,10강
+fossil,화석,10강
+separate,별개의,10강
+intermediate,중급의,10강
+registration,등록,10강
+engaged,참여하는,10강
+location,장소,10강
+craft,공예,10강
+assistance,도움,10강
+charge,"비용, 요금",10강
+supervise,감독하다,10강
+register,등록하다,10강
+complete,작성하다; 마치다,10강
+seasonal,"계절에 맞는, 계절에 따른",10강
+session,수업,10강
+select,선택하다,10강
+primarily,주로,10강
+accompany,동반하다,10강
+upcoming,다가오는,10강
+equipment,장비,10강
+level the playing field,모두에게 고른 기회를 주다,10강
+donate,기부하다,10강
+gear,장비,10강
+affordable,(가격이) 알맞은,10강
+organize,정리하다,10강
+donation,"기부 물품, 기부금",10강
+application,적용,11강
+metaphor,은유,11강
+urban,"도회지의, 도시의",11강
+assign,"맡기다, 할당하다",11강
+locate,찾다,11강
+comparison,비교,11강
+conclusion,결론,11강
+mention,"말하다, 언급하다",11강
+from that point on,그때 시점부터 나아가,11강
+format,형식,11강
+reformist,개혁주의적인,11강
+rotate,"(~을 중심으로) 움직이다, 회전하다",11강
+monetary,금전적인,11강
+calculation,계산,11강
+reason,사고하다,11강
+marginalise,주변화하다,11강
+conventional,전통적인,11강
+retailer,소매업체,11강
+migrant,이주한; 이주민,11강
+transport,운송하다,11강
+ecologically,생태적으로,11강
+entail,"수반하다, 의미하다",11강
+highlight,부각[강조]하다,11강
+genetically,유전적으로,11강
+variation,"변이, 차이",11강
+amongst,"~ 사이에, ~ 간에",11강
+neat,깔끔한,11강
+boundary,경계(선),11강
+distinct,"뚜렷한, 명백한",11강
+sociologist,사회학자,11강
+racialization,인종화,11강
+account,"설명, 기술",11강
+make a difference,"차이를 낳다, 차별을 두다",11강
+in terms of,~라는 측면[견지]에서,11강
+civilized,문명화된,11강
+waistline,허리둘레,11강
+overlook,간과하다,11강
+incidence,발생률,11강
+obesity,비만,11강
+in parallel,나란히,11강
+portion,1인분,11강
+coincidence,우연,11강
+confront,"마주하다, 직면하다",11강
+perception,인식,11강
+distortion,왜곡,11강
+consistently,일관되게,11강
+unintentionally,의도하지 않게,11강
+positive,"과잉의, 플러스의",11강
+ultimately,궁극적으로,11강
+moral,도덕적인,12강
+outrage,분노,12강
+witness,목격하다,12강
+embody,"구현하다, 나타내다",12강
+thirst for,~을 갈망하다,12강
+irrationality,비합리성,12강
+momentarily,일시적으로,12강
+cooperative,협력적인,12강
+counterproductive,"비생산적인, 역효과의",12강
+instinct,"본능, 직감",12강
+potential,가능성,12강
+gene,유전자,12강
+evolutionary,진화의,12강
+rely upon,~에 의존하다,12강
+nutritional,"영양적 가치가 있는, 영양상의",12강
+medicinal,약효가 있는,12강
+poisonous,독(성)이 있는,12강
+pill,"알약, 정제",12강
+ingredient,"(혼합물의) 성분, 원료",12강
+remedy,치료(약),12강
+perceive,"인식하다, 인지하다",12강
+artificial,인공적인,12강
+dietary supplement,식이 보충제,12강
+diagnose,진단하다,12강
+undergo,"거치다, 겪다",12강
+effectiveness,"효과, 효율성",12강
+substance,물질,12강
+dose,복용시키다,12강
+approval,승인,12강
+subsequently,이후에,12강
+authority,권한,12강
+evaluate,평가하다,12강
+legislator,"(의회) 의원, 입법자",12강
+objective,목적,12강
+potentially,잠재적으로,12강
+side effect,부작용,12강
+disposable,일회용의,12강
+as opposed to,"~과는 달리, ~이 아니라",12강
+reassess,재평가하다,12강
+significance,"의의, 의미, 중요성",12강
+perspective,관점,12강
+take up,~을 다시 시작하다,12강
+reflect,반영하다,12강
+perception,인식,12강
+existential,존재론적인,12강
+activate,활성화하다,12강
+analysis,분석,13강
+for the sake of,~을 위해,13강
+account,설명,13강
+condense,응축하다,13강
+address,다루다,13강
+sharpness,날카로움,13강
+coincidental,(우연의) 일치에 의한,13강
+arrangement,배열,13강
+regularity,규칙성,13강
+crush,부수다,13강
+generator,생성기,13강
+brainstorm,브레인스토밍하다,13강
+variation,"변형, 변이",13강
+odds,"확률, 가능성",13강
+confirm,확인하다,13강
+distinguish,"가르다, 구분하다",13강
+internal,"내적인, 내부의",13강
+sensation,감각,13강
+faculty,기능,13강
+interpret,해석하다,13강
+yield,"내다, 생산하다",13강
+coolly,냉담하게,13강
+stir,(감정 등이) 생기게 하다,13강
+critical,중요한,13강
+subtly,미묘하게,13강
+unconsciously,무의식적으로,13강
+posture,자세,13강
+vocal,목소리의,13강
+pitch,음의 높낮이,13강
+via,~을 통하여,13강
+perceive,인식하다,13강
+onboard,승선한,13강
+take a bite off,~을 베어 물다,13강
+earbud,이어버드(귀 안에 넣는 이어폰),13강
+criticism,비판,13강
+overextension,과도한 확장,13강
+involve,관련되다,13강
+dehumanization,비인간화,13강
+primarily,"주로, 기본적으로",13강
+critical,비판적인,13강
+caution,경고하다,13강
+GPS,위성 위치 확인 시스템,13강
+faculty,능력,14강
+infant,아기,14강
+arrange,"준비하다, 마련하다",14강
+confidence,자신감,14강
+anthropological,인류학적인,14강
+conviction,확신,14강
+coherent,일관된,14강
+disordered,무질서한,14강
+consensus,"합의, 일치",14강
+formulation,공식화,14강
+emerge,나타나다,14강
+credit,"공로, 공적",14강
+direction,"지휘, 통솔",14강
+meter,박자,14강
+transition,전환,14강
+be aware of,~을 알다,14강
+aesthetic,미학적인,14강
+be better off,~하는 편이 더 낫다,14강
+be party to,~에 관여하다,14강
+conductor,지휘자,14강
+accompany,(~의) 반주를 하다,14강
+highlight,강조하다,14강
+consist of,~로 구성되다,14강
+be made up of,~로 구성되다,14강
+be composed of,~로 구성되다,14강
+comprehension,이해력,14강
+prior,사전의,14강
+enable ~ to do,~가 …하게 하다,14강
+outscore,~보다 더 높은 점수를 받다,14강
+instructor,강사,15강
+foster,조성하다,15강
+cue,"유도하다, 신호하다",15강
+effortful,"노력한, 정성이 들어간",15강
+injury,부상,15강
+conversely,반대로,15강
+compassion,연민,15강
+mindset,마음가짐,15강
+evidently,분명히,15강
+enhance,향상하다,15강
+fundamental,기본적인,15강
+device,기기,15강
+with regard to,~에 관해서는,15강
+precision,정밀도,15강
+digit,"자릿수, 숫자",15강
+calculator,계산기,15강
+visualize,시각화하다,15강
+obtain,얻다,15강
+curriculum,교육 과정,15강
+stress,강조하다,15강
+abstraction,추상화,15강
+specific,특정한,15강
+cluster,"모으다, 무리로 만들다",15강
+property,"속성, 성질",15강
+define,정의하다,15강
+calculation,계산,15강
+indicator,지표,15강
+numerical,"수치적인, 숫자와 관련된",15강
+cognitive,인지의,15강
+seed,씨앗,15강
+crucial,중요한,15강
+trigger,유발하다,15강
+leading,선도적인,15강
+investigate,"연구하다, 조사하다",15강
+do away with,~을 없애다,15강
+up front,솔직하게,15강
+roughly,대략,15강
+control group,대조군,15강
+modest,대단하지 않은,15강
+make the point,"~을 분명히 보여주다, 강조하다",16강
+flexibility,"유연성, 융통성",16강
+academia,학계,16강
+come up with,~을 생각해 내다,16강
+hypothesis,가설,16강
+trail off,(점점 작아져) 사라지다,16강
+majority,대다수,16강
+journalistic,언론의,16강
+conclusion,결론,16강
+groundbreaking,혁신적인,16강
+perceptual,지각의,16강
+context,"(어떤 일의) 맥락, 전후 사정",16강
+extraordinarily,"대단히, 엄청나게",16강
+adapt,적응시키다,16강
+constantly,끊임없이,16강
+uncertainty,불확실성,16강
+multiple,"다양한, 다수의",16강
+migrating bird,철새,16강
+navigate,"길을 찾다, 방향을 읽다",16강
+landmark,"주요 지형지물, 랜드마크",16강
+magnetic,"자성[자기]의, 자석의",16강
+sufficient,충분한,16강
+celebrity,"유명인, 명사",16강
+caricature,캐리커처(어떤 사람의 특징을 과장하여 우스꽝스럽게 묘사한 그림이나 사진),16강
+stroke,(글씨나 그림의) 획,16강
+recognition,"인식, 인지",16강
+immense,엄청난,16강
+administrator,행정관,16강
+finalize,확정 짓다,16강
+combination,"조합, 결합",16강
+intersect,교차하다,16강
+inhabitable,사람이 거주 가능한,16강
+patch,"지역, 부분",16강
+understandably,당연히,16강
+colonial,식민지 시대의,16강
+tear,떼어 놓다,16강
+reflect,반영하다,16강
+territory,영토,16강
+in-group,내집단,16강
+reference group,준거 집단,16강
+evaluate,평가하다,16강
+contribution,기여,16강
+normative,"규범의, 규범적인",16강
+imitate,모방하다,16강
+comparison,비교,16강
+associative,"연합의, 연상의",16강
+positive,긍정적인,16강
+self-esteem,자존감,16강
+negative,부정적인,16강
+performance,성과,16강
+proximity,근접성,16강
+element,요소,16강
+pitch,(음의) 높이,16강
+essentially,본질적으로,16강
+simultaneously,동시에,16강
+perceptually,지각적으로,16강
+accompaniment,반주,16강
+spatial,공간적인,16강
+approximately,거의,16강
+instrument,악기,16강
+public goods,공공재,16강
+undervalue,저평가하다,16강
+wetland,습지,16강
+provision,제공,16강
+diverse,다양한,16강
+breeding,번식,16강
+unique,고유한,16강
+purification,정화,16강
+apparent,명백한,16강
+indicate,"보여주다, 나타내다",16강
+shallow,피상적인,17강
+concentration,집중,17강
+cognitive,인지의,17강
+capability,능력,17강
+distraction,집중을 방해하는 것,17강
+demanding,부담이 큰,17강
+logical,논리적인,17강
+output,결과물,17강
+subjective,주관적인,17강
+acquire,"얻다, 획득하다",17강
+agreed-upon,합의된,17강
+instrumental,"요긴한, 쓸모가 있는",17강
+derive,끌어내다,17강
+encounter,(우연한) 만남,17강
+interpretation,해석,17강
+definition,정의,17강
+viewpoint,관점,17강
+escape,탈출하다,17강
+confusion,혼란,17강
+understandably,당연히,17강
+roughly,대략,17강
+full-blown,"(병이) 상당히 진행된, 완전히 발달한",17강
+episode,"(증상의) 발현, 사건",17강
+tragedy,비극,17강
+grasp,이해하다,17강
+symptom,증상,17강
+diverse,다양한,17강
+mechanism,기제,17강
+out of the blue,갑자기,17강
+psychological,심리적인,17강
+presentation,"표출, 발현",17강
+diagnostic,진단의,17강
+disorder,장애,17강
+occasion,"(특정한) 경우, 때",17강
+integral,필수적인,17강
+argument,"논증, 주장",17강
+illustrate,(예를 들어) 설명하다,17강
+existence,존재,17강
+Stoics,스토아학파,17강
+hold,"(~이라고) 주장하다, 생각하다",17강
+artefact,인공물,17강
+divine,"신성한, 신의",17강
+conclude,결론을 내리다,17강
+psychological,심리적인,17강
+recovery,회복,17강
+restoration,회복,17강
+resource,자원,17강
+attention,집중,17강
+refer to,~을 의미하다,17강
+fatigue,피로,17강
+muscle soreness,근육통,17강
+stress-buffer,스트레스 완충제,17강
+precede,선행하다,17강
+consequently,따라서,17강
+determine,결정하다,17강
+inactivity,비활동,17강
+endure,"견디다, 인내하다",17강
+despair,절망,17강
+investigate,조사하다,17강
+overlap,겹치다,17강
+distinct from,"~과 구분되는, ~과 명백히 다른",17강
+remarkably,놀랍게도,17강
+associated with,~과 관련된,17강
+estimate,추정하다,18강
+barn,헛간,18강
+tractor,트랙터,18강
+strike up,(대화·관계 등을) 시작하다[트다],18강
+affectionate,"애정 어린, 다정한",18강
+tap,가볍게 두드리기,18강
+nostalgically,향수에 젖어,18강
+remark,"말하다, 언급하다",18강
+build,"만듦새, 구조",18강
+scrap,"폐물, 폐품",18강
+fondness,"애정, 애호, 애착",18강
+hold on to,"~을 계속 보유하다, ~을 고수하다",18강
+long-standing,"오랜, 오래 계속된",18강
+present,"야기하다, 겪게 하다",18강
+immediate,즉각적인,18강
+verified,검증된,18강
+multiple,다양한,18강
+subjective,주관적인,18강
+straightforward,"단순명료한, 간단한",18강
+necessitate,필요로 하다,18강
+supplementary,보충적인,18강
+favor,선호하다,18강
+indicate,"나타내다, 가리키다",18강
+prominent,중요한,18강
+focal point,(관심·활동의) 초점,18강
+arrange,"정하다, 준비하다",18강
+coordinate,조정하다,18강
+be over,끝나다,18강
+take place,"일어나다, 열리다",18강
+indication,"징후, 표시",18강
+outcome,결과,18강
+rational,이성적인,18강
+take ~ for granted,~을 당연시하다,18강
+invisible,보이지 않는,18강
+unthought,무의식적인,18강
+bygone,"지나간, 과거의",18강
+alter,"변하다, 바뀌다",18강
+unquestioned,의심 없이 받아들여지는,18강
+narrative,서사,18강
+import,가져오다,18강
+portray,묘사하다,18강
+reflective,반영하는,18강
+repurpose,"재활용하다, 다른 용도로 사용하다",19강
+fashion,"만들다; 패션, 유행",19강
+fabric,"천, 원단",19강
+textile,직물,19강
+alter,개조하다,19강
+modify,개조[변형]하다,19강
+secondhand,중고의,19강
+sustainability,지속 가능성,19강
+inherent,본질적인,19강
+widespread,널리 퍼진,19강
+silhouette,"실루엣, (옷의 전체적인) 외형, 윤곽",19강
+trimmings,장식,19강
+refresh,새롭게 만들다,19강
+economical,"경제적인, (돈을) 절약하는",19강
+construct,제작하다,19강
+relatively,상대적으로,19강
+stitch,바느질,19강
+retain,유지하다,19강
+distribute,"배포하다, 분배하다",19강
+reliability,신뢰성,19강
+questionable,의심스러운,19강
+detail,세부 사항,19강
+be confronted with,~에 직면하다,19강
+overwhelming,압도적인,19강
+transmit,"전송하다, 방송하다",19강
+irrespective of,~과 상관없이[관계없이],19강
+broadcaster,방송사[국],19강
+portable,휴대용의,19강
+affordable,(가격 등이) 적당한,19강
+compact,"소형인, 아담한",19강
+sociologist,사회학자,19강
+democratic,민주적인,19강
+pose,(문제 등을) 제기하다,19강
+accessible,접근하기 쉬운,19강
+combination,결합,19강
+overwork,"과도한 노동, 과로",19강
+dramatically,극적으로,19강
+shrinking,축소,19강
+flat,"정체된, 변동 없는",19강
+shed,"버리다, 없애다",19강
+reengineering,재설계,19강
+winner-take-all,승자독식의,19강
+immense,엄청난,19강
+go viral,입소문이 나다,19강
+burst,터지다,19강
+decline,감소하다,19강
+salaried,급여를 받는,19강
+split,격차,19강
+stable,안정적인,19강
+chronic,만성적인,19강
+underemployment,불완전 고용,19강
+policymaker,정책 결정자,19강
+conflict,"분쟁, 갈등",19강
+fall back on,~에 의존하다,19강
+simplify,단순화하다,19강
+dominant,지배적인,19강
+opponent,"상대방, 적",19강
+willingness,기꺼이 하려는 의지,19강
+demonstration,"표현, 표시",19강
+aggressiveness,공격성,19강
+preventive,예방적인,19강
+disarmament,"군축, 무장 해제",19강
+prominent,"주요한, 두드러진",19강
+spiral,나선,19강
+presume,"전제하다, 추정하다",19강
+intention,의도,19강
+hostility,적대감,19강
+cognitive,인지적인,19강
+estimate,추정하다,19강
+invasion,침공,19강
+centerpiece,핵심,19강
+restrain,억제하다,20강
+encounter,맞닥뜨리다,20강
+inform,알리다,20강
+care for,~을 돌보다,20강
+turn ~ away,~을 거절하다,20강
+shelter,보호소,20강
+demanding,힘든,20강
+confidence,자신감,20강
+gently,조심스럽게,20강
+isolation,격리,20강
+visibly,눈에 띄게,20강
+statement,"말, 언급",20강
+unusual,드문,20강
+trouble,애먹이다,20강
+maintain,유지하다,20강
+professionalism,전문성,20강
+alternative,대안,20강
+transport,운반하다,20강
+take in,~을 수용하다,20강
+refuse,거절하다,20강
+house,수용하다,20강
+capacity,수용력,20강
+politely,정중하게,20강
+vendor,노점상,20강
+empty-handed,빈손인,20강
+statement,말,20강
+as good as,"~와 다름없는, ~와 같은",20강
+merely,단지,20강
+reply,대답하다,20강
+elementary school,초등학교,20강
+grader,학년생,20강
+status,상태,20강
+disruptive,"지장을 초래하는, 파괴적인",20강
+patience,인내심,20강
+amuse,즐겁게 하다,20강
+instruction,지도,20강
+paragraph,단락,20강
+notice,알아차리다,20강
+newfound,새롭게 찾은,20강
+confidence,자신감,20강
+reflection,"생각, 숙고",20강
+impression,"느낌, 인상",20강
+nervous,긴장한,20강
+struggle with,~으로 고심하다,20강
+stare,바라보다,20강
+blankly,멍하니,20강
+weigh on,~을 압박하다,20강
+retired,은퇴한,20강
+brighten,밝게 하다,20강
+cautiously,조심스럽게,20강
+r?sum?,이력서,20강
+hesitate,"주저하다, 망설이다",20강
+reach out,연락하다,20강
+encourage,용기를 주다,20강
+encounter,만남,20강
+application,지원서,20강
+land a job,직장을 구하다,20강
+nonprofit,비영리적인,20강
+renewed,새로운,20강
+purpose,목표,20강
+go through,~을 겪다,20강
+get through,~을 벗어나다,20강
+decline,거절하다,20강
+nod,고개를 끄덕이다,20강
+mounting,증가하는,20강
+bill,"청구서, 고지서",20강
+intently,열중해서,20강
+interrupt,"끼어들다, 방해하다",20강
+revolutionize,혁신을 가져오다,21강
+spatially,공간적으로,21강
+explicit,명시적인,21강
+analyze,분석하다,21강
+precise,정확한,21강
+referent,지시 대상,21강
+anthropology,인류학,21강
+custom,"관행, 관습",21강
+informant,정보 제공자,21강
+confidentiality,비밀 보호,21강
+extreme,"극단, 극도",21강
+unjustified,정당하지 않은,21강
+geography,지리학,21강
+locate,"표시하다, 찾아내다",21강
+persist,"끈질기게 계속하다, 지속하다, 유지하다",21강
+convince,납득시키다,21강
+fundamentally,"본질적으로, 기본적으로",21강
+dynamics,역학,21강
+deceive,속이다,21강
+take up,"~을 다루다, ~을 받아들여 논하다",21강
+no more than,단지 ~에 불과한,21강
+power,(신적인) 존재,21강
+reason,추론하다,21강
+FALSE,"거짓의, 틀린",21강
+impression,인상,21강
+bent,구부러진,21강
+unreliable,신뢰할 수 없는,21강
+deep-freeze,"냉동용의, 매우 차가운",21강
+starve,굶주리다,21강
+in exchange for,"~에 대한 보답으로, ~에 대한 대가로",21강
+generosity,관대함,21강
+unpredictable,예측 불가능한,21강
+as opposed to,"~과는 다르게, ~과는 대조적으로",21강
+mutual,상호 간의,21강
+insurance,보험,21강
+policy,"(보험) 증권, 방책",21강
+connectivity,연결성,22강
+capacity,능력,22강
+landscape,"경관, 지형",22강
+conservation,"보전, 보존",22강
+perspective,관점,22강
+wander,"돌아다니다, 배회하다",22강
+substantially,"크게, 상당히",22강
+alter,바꾸다,22강
+barrier,장벽,22강
+effectively,"실질적으로, 사실상, 효과적으로",22강
+eliminate,제거하다,22강
+previously,이전에,22강
+permanently,영구적으로,22강
+halt,중단하다,22강
+breeding,번식,22강
+enhance,강화하다,22강
+biopower,바이오 발전,22강
+utility,공공 에너지 서비스,22강
+sustainable,지속 가능한,22강
+obtain,얻다,22강
+pulp mill,펄프 공장,22강
+emission,배출,22강
+capture,포집하다,22강
+landfill,(쓰레기) 매립지,22강
+potent,강력한,22강
+cut down on,~을 줄이다,22강
+replace,대체하다,22강
+contain,포함하다,22강
+appreciable,주목할 만한,22강
+content,"함량, 함유량, 내용물",22강
+deprive,빼앗다,22강
+decomposition,분해,22강
+rural,"농촌의, 시골의",22강
+interference,간섭,22강
+exceed,초과하다,22강
+carrying capacity,수용력,22강
+disastrous,재앙인,22강
+intervention,개입,22강
+modify,"바꾸다, 수정하다",22강
+keystone species,핵심종,22강
+diversify,다양화하다,22강
+occupy,점유하다,22강
+browse,뜯어 먹다,22강
+seed,씨앗,22강
+maintain,유지하다,22강
+beneficial,이로운,22강
+motion,"운동, 움직임",23강
+relative,상대적인,23강
+relevant,"유의미한, 관련 있는",23강
+stretch,뻗다,23강
+bullet,총알,23강
+air drag,공기 저항,23강
+negligible,무시해도 될 정도의,23강
+astronomer,천문학자,23강
+devise,고안하다,23강
+geographical,지리학의,23강
+catalog,분류하다,23강
+star chart,별자리표,23강
+relative,상대적인,23강
+account for,~을 설명하다,23강
+orbit,궤도,23강
+confine,국한시키다,23강
+inhabit,서식하다,23강
+pool,웅덩이,23강
+extreme,극단적인,23강
+homely,흔한,23강
+organism,"생물, 유기체",23강
+rot,썩히다,23강
+timber,목재,23강
+microorganism,미생물,23강
+DNA sequence,DNA 서열,23강
+grossly,심하게,23강
+distort,왜곡하다,23강
+heritage site,유적지,24강
+dominant,지배적인,24강
+expansion,확장,24강
+as far as ... be concerned,…에게 관한 한,24강
+relevant,"적절한, 관련 있는",24강
+monument,기념물,24강
+aspect,측면,24강
+ethnic,민족의,24강
+authentic,"실제의, 진정한",24강
+intimate,친밀한,24강
+standardize,표준화하다,24강
+quarterback,쿼터백(전위와 하프백의 중간 위치에서 뛰면서 공격을 지휘하는 선수),24강
+NFL,미국 프로 미식축구 연맹,24강
+category,범주,24강
+interception,가로채기,24강
+touchdown,터치다운(상대방이 찬 공을 자기 골 선 안에서 땅에 대기),24강
+livelihood,생계,24강
+negotiate,협상하다,24강
+unsatisfactory,만족스럽지 못한,24강
+virtual,가상의,24강
+win the jackpot,대성공을 거두다,24강
+exclusive,(상품 등이) 다른 곳에서는 살 수 없는,24강
+round trip,왕복의,24강
+charming,"매력적인, 멋진",24강
+in comfort,"편안하게, 안락하게",24강
+gift certificate,상품권,24강
+necessitate,불가피하게 만들다,25강
+yield to,~으로 대체되다,25강
+self-imposed,스스로 부과한,25강
+imposition,부과,25강
+appropriate,적절한,25강
+attainment,달성,25강
+obligation,의무,25강
+courtesy,예의,25강
+civility,"정중함, 공손함",25강
+imply,"의미하다, 암시하다",25강
+criticize,비판하다,25강
+guilty,죄책감이 드는,25강
+trigger,촉발하다,25강
+defensive,방어적인,25강
+rigid,경직된,25강
+release,방출하다,25강
+neurotransmitter,신경전달물질,25강
+conversely,반대로,25강
+activate,활성화하다,25강
+regulation,조절,25강
+conscious,의식적인,25강
+explicit,명시적인,25강
+awareness,인식,25강
+illustrate,설명하다,25강
+identification,식별,25강
+sequence,순서,25강
+blinker,깜빡이,25강
+clutch,(자동차의) 클러치판,25강
+transferable,"(다른 것에) 적용 가능한, 전이 가능한",25강
+implicitly,은연중에,25강
+confirm,확인하다,25강
+billiard,당구의,25강
+hotplate,가열판,26강
+sculpture,조각,26강
+barely,"간신히, 겨우",26강
+plastic wrap,비닐 랩,26강
+foothold,발판,26강
+inspiration,영감,26강
+furnishing,가구,26강
+stack,쌓다,26강
+component,요소,26강
+affect,영향을 미치다,26강
+originate,"생겨나다, 기원하다",26강
+aesthetician,미학자,26강
+singleton,단독 개체,26강
+linguist,언어학자,26강
+typically,일반적으로,26강
+distinguish,"구분하다, 구별하다",26강
+depending on,~에 따라,26강
+convey,전달하다,26강
+intentionally,의도적으로,26강
+deliberate,의도적인,26강
+involuntary,무의식적인,26강
+blink,(눈) 깜빡임,26강
+interpret,해석하다,26강
+insult,"모욕, 무례",26강
+assume,"간주하다, 추정하다",26강
+convention,"관습, 관례",26강
+hence,"따라서, 그러므로",26강
+preserve,보존하다,26강
+unique,고유한,26강
+ritual,의식,26강
+vital,지극히 중요한,26강
+continuity,지속성,26강
+perception,인식,26강
+regardless of,~과 관계없이,26강
+universal,보편적인,26강
+trigger,촉발하다,26강
+Mandarin,표준 중국어,26강
+absorbed,몰입한,26강
+literary,문학의,26강
+subjective,주관적인,26강
+prominent,두드러진,27강
+rebellion,반란,27강
+fluid,유동적인,27강
+spontaneously,"자생적으로, 자발적으로",27강
+enhance,강화하다,27강
+maintain,주장하다,27강
+dominant,지배적인,27강
+drastically,급격하게,27강
+alter,변화시키다,27강
+abundant,"많은, 풍부한",27강
+residential,주거의,27강
+commercial,상업의,27강
+promote,촉진하다,27강
+high-density,고밀도의,27강
+spacious,넓은,27강
+flexibility,유연성,27강
+commute,출퇴근하다,27강
+place emphasis on,~을 강조하다,27강
+accommodate,수용하다,27강
+infrastructure,사회 기반 시설,27강
+instrumental,(어떤 일을 하는 데) 중요한,27강
+detach,분리하다,27강
+executive,임원,27강
+be aware of,~을 인지하다,27강
+domain,"분야, 영역",27강
+savanna,사바나 (열대 지방 등의 나무 없는 대평원),28강
+tropical,열대의,28강
+implication,"의미, 함축",28강
+preference,선호,28강
+modify,수정하다,28강
+confirm,확인하다,28강
+thinly,드문드문,28강
+puberty,사춘기,28강
+shift,"바뀌다, 이동하다",28강
+dense,울창한,28강
+presumably,아마도,28강
+determine,"판단하다, 알아내다",28강
+source,출처,28강
+accurate,정확한,28강
+deficient,부족한,28강
+cognitive,인지적인,28강
+identify,"식별하다, 알아내다",28강
+distinguish,구분하다,28강
+generate,생성하다,28강
+notion,"생각, 개념",29강
+reside,"존재하다, 거주하다",29강
+inaccessible,접근하기 어려운,29강
+professional,"전문적인, 전문가의",29강
+substance,"본질, 내용",29강
+reflect,"반영하다, 나타내다",29강
+principle,"원칙, 원리",29강
+contract law,계약법,29강
+commercial,"상업적인, 상업의",29강
+count,중요하다,29강
+transform,"변형시키다, 바꾸다",29강
+marketplace,시장,29강
+comparative,"비교의, 비교를 통한",29강
+instantaneously,"즉시, 즉각적으로",29강
+transfer,"옮기다, 이동하다",29강
+retailer,"소매업자, 소매상",29강
+facilitate,(손)쉽게 하다,29강
+livestreaming,(인터넷) 실시간 방송,29강
+celebrity,"유명인, (유명) 연예인",29강
+exclusive,"독특한, 유일한",29강
+differentiate,"차별화시키다, 구별하다",29강
+interpret,해석하다,29강
+outsize,엄청나게 큰,29강
+strategy,전략,29강
+disarm,무력화시키다,29강
+overwrite,"바꿔 쓰다, 덮어 쓰다",29강
+defensive,방어적인,29강
+convincing,설득력 있는,29강
+force up,올리다,29강
+affordable,"(가격이) 합리적인, 알맞은",29강
+literally,말[문자] 그대로,29강
+environmental,"환경의, 환경과 관련된",29강
+racism,인종[민족] 차별(주의),29강
+landfill,쓰레기 매립지,29강
+industrial,산업[공업]의,29강
+plant,공장,29강
+infrastructure,사회[공공] 기반 시설,29강
+neglected,방치된,29강
+run-down,"황폐한, 쇠퇴한",29강
+hazardous,위험한,29강
+disproportionately,불균형적으로,29강
+deliberately,"의도적으로, 고의로",29강
+exposure,노출,29강
+pollutant,오염 물질,29강
+counterpart,"상대, 대응 관계에 있는 사람[것]",29강
+moderation,"적당함, 절제",30강
+eliminate,배제하다,30강
+occasionally,때때로,30강
+substance,물질,30강
+immune,면역의,30강
+deficiency,결핍,30강
+restrict,제한하다,30강
+dose,복용량,30강
+appropriate,적절한,30강
+dietary,"식이의, 음식의",30강
+consequence,결과,30강
+consumption,섭취,30강
+inherent,선천적인,30강
+capacity,능력,30강
+consistently,일관되게,30강
+contextual,상황적인,30강
+set out,(음식을) 내놓다,30강
+suggestive,제안하는,30강
+placement,배치,30강
+impulse,충동,30강
+reject,거부하다,30강
+current,현재의,30강
+high-refined-sugar,고정제당(의),30강
+sensory,감각의,30강
+preference,선호도,30강
+transmit,전달하다,30강
+breastfed,모유를 먹는,30강
+flavor profile,맛의 구성,30강
+initially,처음에는,30강
+go a long way,크게 도움이 되다,30강
+cardboard,판지,TEST 1강_01
+transportation,배송,TEST 1강_01
+circumstance,상황,TEST 1강_01
+reasonable,합리적인,TEST 1강_01
+mutually,상호 간에,TEST 1강_01
+finalize,확정하다,TEST 1강_01
+telescope,망원경,TEST 1강_01
+tiny,"작은, 조그마한",TEST 1강_01
+fold,"접다, 접어 포개다",TEST 1강_01
+stare at,~을 응시하다,TEST 1강_01
+buzz,"소란을 떨다, 와글거리다",TEST 1강_01
+barely,거의 ~ 없다[않다],TEST 1강_01
+scan,(특히 무엇을 찾느라고 유심히) 살피다,TEST 1강_01
+meaningless,"무의미한, 의미 없는",TEST 1강_01
+literate,지식이 있는,TEST 1강_01
+vulnerability,취약성,TEST 1강_01
+compromise,위태롭게 하다,TEST 1강_01
+security measure,보안 조치,TEST 1강_01
+confidential,비밀의,TEST 1강_01
+barrier,장벽,TEST 1강_01
+firewall,방화벽,TEST 1강_01
+sensitive,민감한,TEST 1강_01
+adherence,"엄수, 충실",TEST 1강_01
+reinforcement,강화,TEST 1강_01
+secure,"지키다, 안전하게 하다",TEST 1강_01
+commercially,상업적으로,TEST 1강_01
+odd,이상한,TEST 1강_01
+trigger,유발 요인,TEST 1강_01
+recover,회복하다,TEST 1강_01
+index finger,검지 손가락,TEST 1강_01
+unconsciously,무의식적으로,TEST 1강_01
+despise,"무시하다, 경멸하다",TEST 1강_01
+blind,눈멀게 하다,TEST 1강_01
+gradual,점진적인,TEST 1강_01
+maturity,성숙(도),TEST 1강_01
+reasonable,합리적인,TEST 1강_01
+overwhelm,어쩔 줄 모르게 만들다,TEST 1강_01
+option,선택(지),TEST 1강_01
+jawbreaker,알사탕,TEST 1강_01
+sesame,참깨,TEST 1강_01
+treat,"군것질거리, 특별한 것",TEST 1강_01
+confusion,혼란,TEST 1강_01
+sustainable,지속 가능한,TEST 1강_01
+sort,분류하다,TEST 1강_01
+dairy,유제품,TEST 1강_01
+alternative,대체물,TEST 1강_01
+cultured,배양한,TEST 1강_01
+suspicion,의심,TEST 1강_01
+genetically modified,유전자 조작의,TEST 1강_01
+literacy,"지식, 능력",TEST 1강_02
+emerging,새로 나타나는,TEST 1강_02
+benefit,이점,TEST 1강_02
+conduct,실시하다,TEST 1강_02
+subject,"연구 대상자, 피험자",TEST 1강_02
+reliable,"확실한, 신뢰할 수 있는",TEST 1강_02
+trigger,유발하다,TEST 1강_02
+engage in,~에 참여하다,TEST 1강_02
+fill in,~을 작성하다,TEST 1강_02
+prompt,프롬프트,TEST 1강_02
+complete,완료하다,TEST 1강_02
+neutral,중립의,TEST 1강_02
+decline,감소,TEST 1강_02
+heart rate,심박수,TEST 1강_02
+control group,대조 그룹,TEST 1강_02
+arousal,각성,TEST 1강_02
+calming,진정,TEST 1강_02
+involved,관여된,TEST 1강_02
+evoke,불러일으키다,TEST 1강_02
+greenhouse gas,온실가스,TEST 1강_02
+emission,배출,TEST 1강_02
+residential,"가정용의, 주거용의",TEST 1강_02
+contributor,"원인 (제공자), 기여자",TEST 1강_02
+account for,~을 차지하다,TEST 1강_02
+overall,전체의,TEST 1강_02
+meanwhile,한편,TEST 1강_02
+prime minister,총리,TEST 1강_02
+excel in,~에 탁월하다,TEST 1강_02
+disrupt,혼란에 빠뜨리다,TEST 1강_02
+convert,전환하다,TEST 1강_02
+initially,처음에,TEST 1강_02
+restrict,제한하다,TEST 1강_02
+transform,변모시키다,TEST 1강_02
+charming,"멋진, 매력적인",TEST 1강_02
+atmosphere,분위기,TEST 1강_02
+exclusive,전용의,TEST 1강_02
+request,요청,TEST 1강_02
+label,"브랜드, 상표",TEST 1강_02
+handcrafted,수제의,TEST 1강_02
+secure,확보하다,TEST 1강_02
+host,"주최하다, 개최하다",TEST 1강_02
+enhance,향상하다,TEST 1강_02
+confidence,자신감,TEST 1강_02
+qualify for,~의 자격을 얻다,TEST 1강_02
+medication,약물,TEST 1강_02
+renewal,갱신,TEST 1강_02
+hazard,위험 요소,TEST 1강_02
+prevention,예방,TEST 1강_02
+attendance,출석,TEST 1강_02
+due,지불해야 하는,TEST 1강_03
+recommend,권장하다,TEST 1강_03
+theorist,이론가,TEST 1강_03
+simulation,"시뮬레이션, 가장하기",TEST 1강_03
+spectacle,구경거리,TEST 1강_03
+classroom instruction,교실 수업,TEST 1강_03
+encounter,"접하다, 마주치다",TEST 1강_03
+refer to ~ as ...,~을 …라고 언급하다,TEST 1강_03
+capture,"사로잡다, 포착하다",TEST 1강_03
+generate,생성하다,TEST 1강_03
+represent,나타내다,TEST 1강_03
+ultimately,궁극적으로,TEST 1강_03
+complicated,복잡한,TEST 1강_03
+automaticity,자동화,TEST 1강_03
+compatible,일치하는,TEST 1강_03
+content,내용,TEST 1강_03
+irrelevance,무관함,TEST 1강_03
+overcome,극복하다,TEST 1강_03
+assert,행사하다,TEST 1강_03
+sharp,(맛이나 향이) 강한,TEST 1강_03
+reinforce,강화하다,TEST 1강_03
+bear to do,"~하는 것을 견디다, ~을 참고 하다",TEST 1강_03
+property,특성,TEST 1강_03
+source,원산지,TEST 1강_03
+controversial,논쟁의 대상인,TEST 1강_03
+state,상태,TEST 1강_03
+translate,번역하다,TEST 1강_03
+effectively,효과적으로,TEST 1강_03
+influential,영향력 있는,TEST 1강_03
+associate,동료,TEST 1강_03
+recognize,인식하다,TEST 1강_03
+contact,"접촉, 접속",TEST 1강_03
+convince,"납득시키다, 확신시키다",TEST 1강_03
+get around to doing,"마침내 ~하게 되다, ~할 시간을 내다",TEST 1강_03
+inaccuracy,부정확성,TEST 1강_03
+inclined,경사진,TEST 1강_03
+convincingly,설득력 있게,TEST 1강_03
+subtle,미묘한,TEST 1강_03
+constant,"일정한, 계속되는",TEST 1강_03
+accelerate,속도가 높아지다,TEST 1강_03
+inference,추론,TEST 1강_03
+compatibility,양립 가능성,TEST 1강_03
+blend,결합[조합]하다,TEST 1강_03
+knock someone’s socks off,누군가를 깜짝 놀라게 하다,TEST 1강_03
+accustomed to,~에 익숙한,TEST 1강_03
+overwhelmed with,~으로 넘치는,TEST 1강_03
+in addition to,~에 더하여,TEST 1강_03
+incentive,"인센티브, 유인(誘因)",TEST 1강_03
+customization,고객 맞춤화,TEST 1강_03
+entertaining,재미있는,TEST 1강_04
+environmentally conscious,환경에 특별한 관심이 있는,TEST 1강_04
+compelling,설득력 있는,TEST 1강_04
+rationalization,"합리화, 합리적 사고",TEST 1강_04
+boost,"고양, (신장시키는) 힘",TEST 1강_04
+flu shot,독감 예방 주사,TEST 1강_04
+in need,"도움이 필요한, 어려움에 처한",TEST 1강_04
+humanize,"인정미 있게 하다, 인정 있게 만들다",TEST 1강_04
+banknote,지폐,TEST 1강_04
+facilitate,"용이하게 하다, 촉진하다",TEST 1강_04
+circulation,유통,TEST 1강_04
+coat of arms,"(가문, 국가, 도시 등의 상징인) 문장",TEST 1강_04
+portrait,초상화,TEST 1강_04
+personage,인물,TEST 1강_04
+stand for,~을 상징하다,TEST 1강_04
+issue,발행하다,TEST 1강_04
+exemplary,모범적인,TEST 1강_04
+narrative,서사적인,TEST 1강_04
+account,"서술, 설명",TEST 1강_04
+grief,슬픔,TEST 1강_04
+illustrate,설명하다,TEST 1강_04
+succession,연속,TEST 1강_04
+organize,"구성하다, 조직하다",TEST 1강_04
+temporally,시간으로,TEST 1강_04
+as opposed to,~과는 달리,TEST 1강_04
+straightforward,"단순한, 간단한",TEST 1강_04
+arrange,배열하다,TEST 1강_04
+empathize,공감하다,TEST 1강_04
+mimic,모방하다,TEST 1강_04
+in turn,결국,TEST 1강_04
+on the same page,"의견이 일치하는, 같은 생각을 하는",TEST 1강_04
+get along,잘 지내다,TEST 1강_04
+striking,놀라운,TEST 1강_04
+union,결혼 생활,TEST 1강_04
+struggle,애쓰다,TEST 1강_04
+spouse,배우자,TEST 1강_04
+subtly,미묘하게,TEST 1강_04
+strengthen,강화하다,TEST 1강_04
+confirm,확인하다,TEST 1강_04
+permanent,영구적인,TEST 1강_04
+silver wedding,은혼식(결혼 25주년 기념 해),TEST 1강_04
+neuron,"뉴런, 신경 세포",TEST 1강_04
+flash,섬광,TEST 1강_04
+cell,세포,TEST 1강_04
+regardless of,~와 상관없이,TEST 1강_04
+apparently,분명히,TEST 1강_04
+activation,활성화,TEST 1강_04
+tune,조율하다,TEST 1강_04
+tailored,맞춤형인,TEST 1강_04
+liberal,"진보적인, 자유주의의",TEST 1강_05
+conservative,보수적인,TEST 1강_05
+vice versa,반대의 경우도 마찬가지이다,TEST 1강_05
+interpret,해석하다,TEST 1강_05
+separate,"서로 다른, 분리된",TEST 1강_05
+mate,짝,TEST 1강_05
+territory,영역,TEST 1강_05
+nonaggressive,공격적이지 않은,TEST 1강_05
+roaring,포효,TEST 1강_05
+stalk-eyed fly,자루눈파리,TEST 1강_05
+toad,두꺼비,TEST 1강_05
+baboon,개코원숭이,TEST 1강_05
+evolve,진화하다,TEST 1강_05
+stable,안정적인,TEST 1강_05
+duration,기간,TEST 1강_05
+acoustic,음향의,TEST 1강_05
+constrain,제한하다,TEST 1강_05
+fake,조작하다,TEST 1강_05
+indicator,지표,TEST 1강_05
+adapt,적응하다,TEST 1강_05
+longhand,손으로 쓴,TEST 1강_05
+painstakingly,"힘들여, 공들여",TEST 1강_05
+reference material,참고 자료,TEST 1강_05
+time consuming,시간이 걸리는,TEST 1강_05
+relevant,관련 있는,TEST 1강_05
+essential,"중요한, 필수적인",TEST 1강_05
+addicted,중독된,TEST 1강_05
+tune,"조율하다, 조정하다",TEST 1강_05
+stimulation,자극,TEST 1강_05
+come up with,~을 떠올리다,TEST 1강_05
+in exchange for,~과 교환하여,TEST 1강_05
+concern,"걱정, 염려",TEST 1강_05
+potter,"도공, 도예가",TEST 1강_05
+clay,진흙,TEST 1강_05
+construction,공사,TEST 1강_05
+oak,오크,TEST 2강_01
+drawer,서랍,TEST 2강_01
+filing cabinet,서류 정리장,TEST 2강_01
+in one’s absence,~이 없는 사이에,TEST 2강_01
+accommodate,"두다, 수용하다",TEST 2강_01
+unsuitable,적합하지 않은,TEST 2강_01
+at one’s earliest convenience,"가급적 빨리, 되도록 일찍",TEST 2강_01
+prompt,신속한,TEST 2강_01
+stir,움직이다,TEST 2강_01
+contented,"편안한, 만족스러운",TEST 2강_01
+pillow,베개,TEST 2강_01
+cozy,아늑한,TEST 2강_01
+garbage,쓰레기,TEST 2강_01
+earthy,흙냄새 나는,TEST 2강_01
+hay,건초,TEST 2강_01
+doorway,"문간, 출입구",TEST 2강_01
+extension,"연장선, 연장",TEST 2강_01
+reorient,(방향을) 재조정하다,TEST 2강_01
+contemporary,현대의,TEST 2강_01
+embrace,포괄하다,TEST 2강_01
+distinct,"독립된, 별개의",TEST 2강_01
+combination,결합,TEST 2강_01
+geometrical,기하학적인,TEST 2강_01
+regularity,규칙성,TEST 2강_01
+keen,예리한,TEST 2강_01
+grim,암울한,TEST 2강_01
+custom,관습,TEST 2강_01
+servant,하인,TEST 2강_01
+accompany,"수행하다, 동반하다",TEST 2강_01
+the beyond,"저승, 내세",TEST 2강_01
+suitable,적절한,TEST 2강_01
+sacrifice,희생하다,TEST 2강_01
+cruel,"잔혹한, 잔인한",TEST 2강_01
+come to the rescue,구하러 오다,TEST 2강_01
+substitute,대체물,TEST 2강_01
+helpmate,"동반자, 조력자, 배우자",TEST 2강_01
+inevitably,반드시,TEST 2강_01
+materiality,물질성,TEST 2강_01
+inconceivable,생각조차 할 수 없는,TEST 2강_01
+performance,"행위, 수행, 실행",TEST 2강_01
+fabric,"직물, 천",TEST 2강_01
+punctuate,간간이 끼어들다,TEST 2강_01
+parallel,"나란히, 평행으로",TEST 2강_01
+complement,보완하다,TEST 2강_01
+poetically,시적으로,TEST 2강_01
+populate,차지하다,TEST 2강_01
+cultural heritage,문화유산,TEST 2강_01
+ritual,의식,TEST 2강_01
+counterpart,(쌍을 이루는) 한 측; 대응하는 것,TEST 2강_01
+go through,~을 겪다,TEST 2강_02
+puberty,사춘기,TEST 2강_02
+alternative,"다른, 대안의",TEST 2강_02
+addictive,중독성의,TEST 2강_02
+devote ~ to ...,~을 …에 바치다,TEST 2강_02
+acceptance,인정,TEST 2강_02
+nightmare,악몽,TEST 2강_02
+get sucked into,~에 휘말리다,TEST 2강_02
+streamed,실시간으로 전송되는,TEST 2강_02
+embodied,구체화된,TEST 2강_02
+philosopher,철학자,TEST 2강_02
+statesman,(경험 많고 존경받는) 정치인,TEST 2강_02
+blend,"결합, 혼합",TEST 2강_02
+fruitful,유익한,TEST 2강_02
+metaphor,비유,TEST 2강_02
+radical,극단적인,TEST 2강_02
+rationalism,합리주의,TEST 2강_02
+quest,탐구 (과정),TEST 2강_02
+transportation,교통수단,TEST 2강_02
+subregion,하위 지역,TEST 2강_02
+overwhelming,압도적인,TEST 2강_02
+reliance,"의존, 의지",TEST 2강_02
+remarkable,뛰어난,TEST 2강_02
+composer,작곡가,TEST 2강_02
+enslave,노예로 만들다,TEST 2강_02
+extraordinary,비범한,TEST 2강_02
+reproduce,재현하다,TEST 2강_02
+mimic,모방하다,TEST 2강_02
+incorporate,포함하다,TEST 2강_02
+disability,장애,TEST 2강_02
+harsh,가혹한,TEST 2강_02
+slavery,"노예, 노예 제도",TEST 2강_02
+astonish,깜짝 놀라게 하다,TEST 2강_02
+blend,혼합하다,TEST 2강_02
+vividly,생생하게,TEST 2강_02
+depict,묘사하다,TEST 2강_02
+celebrated,유명한,TEST 2강_02
+pass away,"세상을 떠나다, 사망하다",TEST 2강_02
+legacy,유산,TEST 2강_02
+adversity,역경,TEST 2강_02
+rock,뒤흔들다; 록 (음악),TEST 2강_02
+showcase,보여주다,TEST 2강_02
+competition,"대회, 경연",TEST 2강_02
+presence,존재(감),TEST 2강_02
+enthusiast,애호가,TEST 2강_02
+instrument,악기,TEST 2강_02
+punch,호소력,TEST 2강_02
+registration,등록,TEST 2강_02
+spectacular,화려한,TEST 2강_02
+astronomical,"천문학의, 천문의",TEST 2강_03
+chilly,쌀쌀한,TEST 2강_03
+disrupt,방해하다,TEST 2강_03
+engender,"낳다, 불러일으키다",TEST 2강_03
+derive from,~에서 유래하다,TEST 2강_03
+entirety,"전체, 전부",TEST 2강_03
+potential,잠재적인,TEST 2강_03
+sensibility,"감정, 감성",TEST 2강_03
+complementary,상호 보완적인,TEST 2강_03
+Confucian philosophy,유교 철학,TEST 2강_03
+authenticity,진정성,TEST 2강_03
+accelerate,가속하다,TEST 2강_03
+notion,"생각, 개념",TEST 2강_03
+relative,상대적인,TEST 2강_03
+facilitate,촉진하다,TEST 2강_03
+paradigm,"패러다임, 인식 틀",TEST 2강_03
+consensus,합의,TEST 2강_03
+perspective,관점,TEST 2강_03
+legitimate,"타당한, 정당한",TEST 2강_03
+inaccurate,부정확한,TEST 2강_03
+validity,타당성,TEST 2강_03
+discourse,"담론, 담화",TEST 2강_03
+suit,맞추다,TEST 2강_03
+misinformed,잘못된 정보를 받고 있는,TEST 2강_03
+subject,"피험자, 연구 대상",TEST 2강_03
+behavior,행동,TEST 2강_03
+reveal,"밝히다, 드러내다",TEST 2강_03
+hire,고용하다,TEST 2강_03
+investigate,조사하다,TEST 2강_03
+productivity,생산성,TEST 2강_03
+hypothesis,"가설, 가정",TEST 2강_03
+lighting,조명,TEST 2강_03
+output,"생산량, 산출량",TEST 2강_03
+measure,"측정하다, 재다",TEST 2강_03
+variable,변수,TEST 2강_03
+coin,(새로운 낱말·어구를) 만들다,TEST 2강_03
+refer to,~을 일컫다,TEST 2강_03
+term,용어,TEST 2강_03
+generate,만들어 내다,TEST 2강_03
+human affairs,인간사,TEST 2강_03
+in terms of,~의 측면에서,TEST 2강_03
+resource,자원,TEST 2강_03
+decade,10년,TEST 2강_03
+underlying,저변에 있는,TEST 2강_03
+intention,의도,TEST 2강_03
+essence,본질,TEST 2강_03
+mode,"방식, 양식",TEST 2강_03
+presuppose,전제하다,TEST 2강_03
+property,특성,TEST 2강_03
+relative to,~과 비교하면,TEST 2강_04
+chemical,화학 물질,TEST 2강_04
+distribute,"퍼뜨리다, 뿌리다",TEST 2강_04
+profit,득을 보다,TEST 2강_04
+beneficial,유익한,TEST 2강_04
+reputation,평판,TEST 2강_04
+adapt,적응시키다,TEST 2강_04
+at the end of the day,결국,TEST 2강_04
+expand,확장하다,TEST 2강_04
+innovative,혁신적인,TEST 2강_04
+address,"(어려운 문제 등을) 다루다, 처리하다",TEST 2강_04
+implementation,"시행, 이행",TEST 2강_04
+strategy,전략,TEST 2강_04
+channel,"보내다, 전하다",TEST 2강_04
+dedicated,전용의,TEST 2강_04
+in-store,매장 내의,TEST 2강_04
+virtually,가상으로,TEST 2강_04
+suitability,적합성,TEST 2강_04
+prior to,"~하기 전에, ~에 앞서",TEST 2강_04
+promotion,홍보[판촉] (활동),TEST 2강_04
+initiative,"추진 방안[실행 계획], 전략",TEST 2강_04
+operating profit margin,영업이익률,TEST 2강_04
+unique,"고유한, 다른",TEST 2강_04
+withdraw,"끌어오다, 빼내다",TEST 2강_04
+extraction,"취수, 추출",TEST 2강_04
+watershed,(강의) 유역,TEST 2강_04
+eventual,"최종의, 종국의",TEST 2강_04
+floodplain,범람원(강이 범람하면 물에 잠기는 강가 평지),TEST 2강_04
+appearance,"외양, 겉모습",TEST 2강_04
+transportation,운송,TEST 2강_04
+manifestation,"표현, 표시",TEST 2강_04
+perceive,"인지하다, 인식하다",TEST 2강_04
+faith-based,신앙에 기반한,TEST 2강_04
+charity,자선 단체,TEST 2강_04
+apparent,"눈에 보이는, 분명한",TEST 2강_04
+accumulate,축적하다,TEST 2강_04
+illustrate,"보여 주다, 설명하다",TEST 2강_04
+irresistible,거부할 수 없는,TEST 2강_04
+factor,"요인, 요소",TEST 2강_04
+presume,"추정하다, 가정하다",TEST 2강_04
+variable,"변인, 변수",TEST 2강_04
+correlation,상관관계,TEST 2강_04
+indicate,"나타내다, 보여 주다",TEST 2강_04
+roughly,"대략, 대강",TEST 2강_04
+literacy,읽고 쓰는 능력,TEST 2강_04
+popularity,"유행, 인기",TEST 2강_04
+merge,"합쳐지다, 융합되다",TEST 2강_04
+indistinguishable,구별할 수 없는,TEST 2강_04
+immediacy,"즉시성, 신속성",TEST 2강_04
+emphasis,주안점,TEST 2강_05
+exposure,노출,TEST 2강_05
+regional variation,지역적 변이,TEST 2강_05
+interpret,해석하다,TEST 2강_05
+identify,식별하다,TEST 2강_05
+assign,부여하다,TEST 2강_05
+reliably,확실하게,TEST 2강_05
+predominately,대부분,TEST 2강_05
+awareness,인식,TEST 2강_05
+insistence,고집,TEST 2강_05
+encounter,만남,TEST 2강_05
+trace,흔적,TEST 2강_05
+witness,목격자,TEST 2강_05
+capacity,능력,TEST 2강_05
+inspire,~할 마음을 가지게 하다,TEST 2강_05
+domesticate,재배하다,TEST 2강_05
+cornfield,옥수수밭,TEST 2강_05
+wheat,밀,TEST 2강_05
+terracing,계단식 경작지,TEST 2강_05
+drainage,배수,TEST 2강_05
+exploitation,이용,TEST 2강_05
+take ~ for granted,~을 당연하게 여기다,TEST 2강_05
+alien,외계의,TEST 2강_05
+rush,서두르다,TEST 2강_05
+emperor,황제,TEST 2강_05
+court,"조정, 궁궐",TEST 2강_05
+distinction,"영예, 명예",TEST 2강_05
+eagerly,"열심히, 간절히",TEST 2강_05
+outdo,능가하다,TEST 2강_05
+expand,넓히다,TEST 2강_05
+waterway,수로,TEST 2강_05
+storage,"저장, 보관",TEST 2강_05
+transportation,"운송, 수송",TEST 2강_05
+spread,퍼지다,TEST 2강_05
+prosperity,"번영, 번창",TEST 2강_05
+speak up,(의견을) 말하다[밝히다],TEST 2강_05
+symbolize,상징하다,TEST 2강_05
+nod,(고개를) 끄덕이다,TEST 2강_05
+disappointing,"실망스러운, 기대에 못 미치는",TEST 2강_05
+scold,꾸짖다,TEST 2강_05
+warn,경고하다,TEST 2강_05
+staff,교직원,TEST 3강_01
+priority,우선 사항,TEST 3강_01
+ensure,확실히 하다,TEST 3강_01
+condition,질환,TEST 3강_01
+infection,감염,TEST 3강_01
+notify,알리다,TEST 3강_01
+diagnose,진단하다,TEST 3강_01
+absence,결석,TEST 3강_01
+specify,명시하다,TEST 3강_01
+appropriate,적절한,TEST 3강_01
+measure,"조치, 방안",TEST 3강_01
+perform,연주하다,TEST 3강_01
+fix,고정하다,TEST 3강_01
+note,음,TEST 3강_01
+polished,광이 나는,TEST 3강_01
+reflection,"반사, 반영",TEST 3강_01
+presence,존재,TEST 3강_01
+chin,턱,TEST 3강_01
+anchor,고정하다,TEST 3강_01
+bow,(바이올린 등을 켜는) 활,TEST 3강_01
+string,(악기의) 현[줄],TEST 3강_01
+hesitate,"망설이다, 주저하다",TEST 3강_01
+measured,"절제된, 신중한, 침착한",TEST 3강_01
+myth,근거 없는 통념,TEST 3강_01
+independence,독립성,TEST 3강_01
+neutral,중립적인,TEST 3강_01
+confusion,혼란,TEST 3강_01
+conceive,생각하다,TEST 3강_01
+recapture,되찾다,TEST 3강_01
+intend,의도하다,TEST 3강_01
+migrate,옮기다,TEST 3강_01
+bias,"편견, 편향성",TEST 3강_01
+on the contrary,"반대로, 오히려",TEST 3강_01
+precisely,정확하게,TEST 3강_01
+flow from,~에서 나오다,TEST 3강_01
+convey,전달하다,TEST 3강_01
+vital,중요한,TEST 3강_01
+bark,나무껍질,TEST 3강_01
+transport,"나르다, 수송하다",TEST 3강_01
+trunk,나무의 몸통,TEST 3강_01
+vigor,활력,TEST 3강_01
+disrupt,중단시키다,TEST 3강_01
+provision,식량을 공급하다,TEST 3강_01
+craftsperson,"장인, 숙련공",TEST 3강_01
+intuitively,직관적으로,TEST 3강_01
+screen,선별하다,TEST 3강_01
+applicant,지원자,TEST 3강_01
+assign,부여하다,TEST 3강_01
+employability,고용 가능성,TEST 3강_01
+typical,전형적인,TEST 3강_02
+reinforce,강화하다,TEST 3강_02
+diverse,다양한,TEST 3강_02
+biased,편향된,TEST 3강_02
+magnify,확대하다,TEST 3강_02
+pursue,추구하다,TEST 3강_02
+obtain,"얻다, 획득하다",TEST 3강_02
+tiny,아주 적은,TEST 3강_02
+approval,인정,TEST 3강_02
+intense,강렬한,TEST 3강_02
+curiosity,호기심,TEST 3강_02
+promise to do,"~할 것 같다, ~일 것 같다",TEST 3강_02
+stimulating,"자극을 주는, 자극적인",TEST 3강_02
+overlap,겹치다,TEST 3강_02
+derive,"얻다, 끌어내다",TEST 3강_02
+correlation,상관관계,TEST 3강_02
+misleading,오해의 소지가 있는,TEST 3강_02
+cite,(이유·예를) 들다,TEST 3강_02
+notable,주목할 만한,TEST 3강_02
+entirely,"전적으로, 완전히",TEST 3강_02
+dependent,~에 좌우되는[달려 있는],TEST 3강_02
+assumption,가정,TEST 3강_02
+constitute,"구성하다, 조직하다",TEST 3강_02
+interconnected,서로 연결된,TEST 3강_02
+geographical,지리적인,TEST 3강_02
+literacy,"리터러시, (특정 분야·문제에 관한) 지식[능력]",TEST 3강_02
+remote,원격의,TEST 3강_02
+exclusively,(오직) ~만,TEST 3강_02
+dominant,"두드러진, 지배적인",TEST 3강_02
+decline,"감소하다, 떨어지다",TEST 3강_02
+prominent,주요한,TEST 3강_02
+intellectual,지적인,TEST 3강_02
+passion,열정,TEST 3강_02
+abandon,포기하다,TEST 3강_02
+enroll,입학하다,TEST 3강_02
+interrupt,중단시키다,TEST 3강_02
+depression,우울증,TEST 3강_02
+physiology,생리학,TEST 3강_02
+influential,영향력이 있는,TEST 3강_02
+publication,"저작물, 출판물",TEST 3강_02
+appoint,임명하다,TEST 3강_02
+retirement,은퇴,TEST 3강_02
+round trip,왕복 여행,TEST 3강_02
+scenic,경치가 좋은,TEST 3강_02
+refund,환불,TEST 3강_02
+booking fee,예약 수수료,TEST 3강_02
+insight,"이해, 통찰력",TEST 3강_02
+hands-on,"실습의, 직접 해 보는",TEST 3강_02
+accompany,동반하다,TEST 3강_02
+guardian,보호자,TEST 3강_03
+manipulation,조작,TEST 3강_03
+refer to,"~을 의미하다, 말하다",TEST 3강_03
+compose,구성하다,TEST 3강_03
+varying,다양한,TEST 3강_03
+spontaneous,자발적인,TEST 3강_03
+property,"특성, 성질",TEST 3강_03
+generate,생성하다,TEST 3강_03
+nonlinear,비선형의,TEST 3강_03
+intervention,"개입, 중재",TEST 3강_03
+qualitatively,질적으로,TEST 3강_03
+impact,영향,TEST 3강_03
+relieve,완화하다,TEST 3강_03
+cognitive,인지적인,TEST 3강_03
+load,"부하, 짐",TEST 3강_03
+impose,부과하다,TEST 3강_03
+neuroscientist,신경과학자,TEST 3강_03
+tax,"부담을 지우다, 과세하다",TEST 3강_03
+come up with,"~을 생각해 내다, 제시하다",TEST 3강_03
+statistically,통계적으로,TEST 3강_03
+conventional,관습적인,TEST 3강_03
+commonplace,평범한,TEST 3강_03
+association,연관성,TEST 3강_03
+originality,독창성,TEST 3강_03
+occupied,바쁜,TEST 3강_03
+resort to,~에 의존하다,TEST 3강_03
+shortcut,지름길,TEST 3강_03
+stereotype,고정관념,TEST 3강_03
+assumption,가정,TEST 3강_03
+well-worn,진부한,TEST 3강_03
+abundant,풍부한,TEST 3강_03
+inhibit,억제하다,TEST 3강_03
+reflexive,반사적인,TEST 3강_03
+morality,도덕성,TEST 3강_03
+fairness,공정성,TEST 3강_03
+widespread,광범위한,TEST 3강_03
+norm,규범,TEST 3강_03
+enforcement,"집행, 시행",TEST 3강_03
+expend,"쓰다, 들이다",TEST 3강_03
+protest,"항의하다, 저항하다",TEST 3강_03
+intervene,개입하다,TEST 3강_03
+property,"(고유의) 속성, 특성",TEST 3강_03
+in triplicate,"세 부로 만들어, 세 부 작성하여",TEST 3강_03
+classification,분류,TEST 3강_03
+distribute,배포하다,TEST 3강_03
+alternative,대안,TEST 3강_03
+envelope,봉투,TEST 3강_03
+edge,가장자리,TEST 3강_03
+accumulate,쌓이다,TEST 3강_03
+all but,거의,TEST 3강_04
+coordination,조화,TEST 3강_04
+positive,긍정적인,TEST 3강_04
+negative,부정적인,TEST 3강_04
+deny,"거부하다, 허용하지 않다",TEST 3강_04
+institution,"시설, 기관",TEST 3강_04
+reflect,반영하다,TEST 3강_04
+restriction,제한,TEST 3강_04
+restrain,억제하다,TEST 3강_04
+norm,규범,TEST 3강_04
+take ~ for granted,~을 당연한 것으로 여기다,TEST 3강_04
+bottom line,핵심,TEST 3강_04
+mutual,상호 간의,TEST 3강_04
+agreement,동의,TEST 3강_04
+separate,별개의,TEST 3강_04
+inherent,"선천적인, 타고난",TEST 3강_04
+universal,보편적인,TEST 3강_04
+generalizability,일반화 가능성,TEST 3강_04
+attain,달성하다,TEST 3강_04
+fulfillment,충족,TEST 3강_04
+vehicle,수단,TEST 3강_04
+contextualize,맥락과 관련 짓다,TEST 3강_04
+conceptualization,개념적인 해석,TEST 3강_04
+frustration,좌절,TEST 3강_04
+wellness,건강,TEST 3강_04
+relevant,의의가 있는,TEST 3강_04
+promotion,증진,TEST 3강_04
+progressive,진보적인,TEST 3강_04
+maintain,유지하다,TEST 3강_04
+presence,존재(감),TEST 3강_04
+primary,주요한,TEST 3강_04
+timely,"때맞춘, 시의적절한",TEST 3강_04
+inspire,고무하다,TEST 3강_04
+recognition,"인정, 인식",TEST 3강_04
+preference,"선호되는 것, 선호(도)",TEST 3강_04
+location,위치,TEST 3강_04
+like-minded,같은 생각을 하는,TEST 3강_04
+seemingly,겉보기에,TEST 3강_04
+protocol,규약,TEST 3강_04
+constitute,구성하다,TEST 3강_04
+derive,유래하다,TEST 3강_04
+relevant,"적절한, 유의미한",TEST 3강_04
+imply,"암시하다, 의미하다",TEST 3강_04
+scheme,"체계, 계획",TEST 3강_04
+ritualistic,의례적인,TEST 3강_04
+imprint,"각인하다, 지대한 영향을 미치다",TEST 3강_04
+get one’s hands on,~을 손에 넣다,TEST 3강_04
+employ,"이용하다, 쓰다",TEST 3강_04
+psychological,심리적인,TEST 3강_04
+trick,"전략, 속임수",TEST 3강_05
+glue,"달라붙어서 떨어지지 않다, 열중하다",TEST 3강_05
+hardly,거의 ~ 않다,TEST 3강_05
+eagerly,간절히,TEST 3강_05
+dopamine,도파민,TEST 3강_05
+hold true,"진실이다, 딱 들어맞다",TEST 3강_05
+uneventful,(무사)평온한,TEST 3강_05
+potential,잠재적인,TEST 3강_05
+civil right,시민권,TEST 3강_05
+deny,"거부하다, 부인하다",TEST 3강_05
+kitten,새끼고양이,TEST 3강_05
+at no cost,무료로,TEST 3강_05
+reverse,반대,TEST 3강_05
+attachment,애착,TEST 3강_05
+assist,돕다,TEST 3강_05
+self-esteem,자존감,TEST 3강_05
+confidence,"자신(감), 확신",TEST 3강_05
+statistics,통계,TEST 3강_05
+compensate for,~을 보상하다,TEST 3강_05
+umpire,"주심을 맡다, 심판을 보다",TEST 3강_05
+referee,심판하다,TEST 3강_05
+blindly,맹목적으로,TEST 3강_05
+optimistic,낙관적인,TEST 3강_05
+tune in to,"~에 주의를 집중하다, 채널을 맞추다",TEST 3강_05
+instructor,강사,TEST 3강_05
+preceding,이전의,TEST 3강_05
+temporary,일시적인,TEST 3강_05
+immediate,인접한,TEST 3강_05
+collectively,"통틀어, 총체적으로",TEST 3강_05
+sparkler,폭죽,TEST 3강_05
+undoubtedly,틀림없이,TEST 3강_05
+daydream,공상하다,TEST 3강_05
+intelligent,똑똑한,TEST 3강_05
+appreciate,인식하다,TEST 3강_05
+statistical,"통계적인, 통계의",TEST 3강_05
+formulate,"만들어내다, 표현하다",TEST 3강_05
+causal,인과 관계의,TEST 3강_05
+spell,기간,TEST 3강_05
+do the trick,효험[효과]이 있다,TEST 3강_05
+illusion,착각,TEST 3강_05
+psychotherapy,심리치료,TEST 3강_05
+odds,"가능성, 공산",TEST 3강_05
+credit,"공, 칭찬",TEST 3강_05
+gratitude,"고마움, 감사",TEST 3강_05
+hyperinflation,초인플레이션,TEST 3강_05
+authorities,당국,TEST 3강_05
+civil servant,공무원,TEST 3강_05
+out of thin air,난데없이,TEST 3강_05
+chase,쫓다,TEST 3강_05
+inevitably,불가피하게,TEST 3강_06
+reinforce,강화하다,TEST 3강_06
+set in,시작되다,TEST 3강_06
+accelerate,가속화되다,TEST 3강_06
+in principle,이론적으로,TEST 3강_06
+take hold,자리 잡다,TEST 3강_06
+moderate,적당한,TEST 3강_06
+revolution,혁명,TEST 3강_06
+monetary,통화의,TEST 3강_06
+annual,연간의,TEST 3강_06
+digit,숫자,TEST 3강_06
+backpack,배낭,TEST 3강_06
+stuffed animal,봉제 인형,TEST 3강_06
+insist,고집하다,TEST 3강_06
+intense,"열정적인, 강렬한",TEST 3강_06
+convince,확신시키다,TEST 3강_06
+miss out on,~을 놓치다,TEST 3강_06
+look out for,"~을 챙기다, 보살피다",TEST 3강_06
+hire,고용하다,TEST 3강_06
+acquire,"얻다, 획득하다",TEST 3강_06
+nonstop,끊임없이,TEST 3강_06
+,,
+`;
+    // ⬆️ 붙여넣기는 여기까지만! 
+
+    let allWords = [];
+    let currentList = [];
+    let currentIndex = 0;
+    let isFlipped = false;
+    let currentFontSize = 'large';
+    let isAnimating = false;
+
+    window.onload = function() {
+        processCSVText(rawCSVData);
+        initSwipeGesture();
+    };
+
+    function processCSVText(text) {
+        const lines = text.split(/\r?\n/).filter(line => line.trim() !== '');
+        if (lines.length === 0) return;
+
+        const delimiter = lines[0].includes('\t') ? '\t' : ',';
+        const categories = new Set();
+        
+        let startIndex = 0;
+        if (lines[0].includes('단어') || lines[0].includes('문제') || lines[0].includes('provide')) {
+            if (!lines[0].includes('provide')) startIndex = 1; 
+        }
+
+        for (let i = startIndex; i < lines.length; i++) {
+            const row = parseCSVRow(lines[i], delimiter);
+            if (row.length >= 2) {
+                const question = row[0] ? row[0].trim() : '';
+                const answer = row[1] ? row[1].trim() : '';
+                const category = (row[2] && row[2].trim() !== '') ? row[2].trim() : '기본분류';
+                
+                if (question || answer) {
+                    allWords.push({
+                        id: i,
+                        question: question,
+                        answer: answer,
+                        category: category,
+                        status: '비어있음',
+                        studyDate: '' 
+                    });
+                    categories.add(category);
+                }
+            }
+        }
+
+        const catSelect = document.getElementById('categorySelect');
+        catSelect.innerHTML = '<option value="all">모든 단원</option>';
+        Array.from(categories).sort().forEach(cat => {
+            const opt = document.createElement('option');
+            opt.value = cat;
+            opt.textContent = cat;
+            catSelect.appendChild(opt);
+        });
+
+        filterData();
+    }
+
+    function parseCSVRow(str, delimiter) {
+        const result = [];
+        let curVal = '';
+        let inQuotes = false;
+        for (let i = 0; i < str.length; i++) {
+            const char = str[i];
+            if (char === '"' && str[i+1] === '"') {
+                curVal += '"';
+                i++;
+            } else if (char === '"') {
+                inQuotes = !inQuotes;
+            } else if (char === delimiter && !inQuotes) {
+                result.push(curVal);
+                curVal = '';
+            } else {
+                curVal += char;
+            }
+        }
+        result.push(curVal);
+        return result;
+    }
+
+    function filterData() {
+        const cat = document.getElementById('categorySelect').value;
+        const stat = document.getElementById('statusSelect').value;
+
+        currentList = allWords.filter(word => {
+            const matchCat = (cat === 'all') || (word.category === cat);
+            const matchStat = (stat === 'all') || (word.status === stat);
+            return matchCat && matchStat;
+        });
+
+        currentIndex = 0;
+        resetFlip();
+        updateCardDisplay();
+        updateCounts(); 
+        renderHistoryTable(); 
+    }
+
+    function startReview(targetStatus) {
+        const count = allWords.filter(word => word.status === targetStatus).length;
+        if (count === 0) {
+            alert(`현재 '${targetStatus}' 상태인 단어가 없습니다! \n먼저 학습을 진행하며 상태를 체크해주세요. 🎉`);
+            return;
+        }
+
+        document.getElementById('categorySelect').value = 'all';
+        document.getElementById('statusSelect').value = targetStatus;
+        
+        filterData();   
+        
+        for (let i = currentList.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [currentList[i], currentList[j]] = [currentList[j], currentList[i]];
+        }
+        updateCardDisplay();
+        renderHistoryTable();
+        
+        alert(`총 ${count}개의 '${targetStatus}' 단어를 복습합니다!\n순서가 무작위로 섞였습니다.`);
+    }
+
+    function updateCounts() {
+        let unknownCount = 0;
+        let confusedCount = 0;
+        let knownCount = 0;
+
+        currentList.forEach(word => {
+            if (word.status === '모름') unknownCount++;
+            else if (word.status === '헷갈림') confusedCount++;
+            else if (word.status === '알았음') knownCount++;
+        });
+
+        document.getElementById('count-unknown').innerText = unknownCount;
+        document.getElementById('count-confused').innerText = confusedCount;
+        document.getElementById('count-known').innerText = knownCount;
+    }
+
+    // 🔥 오디오 재생 함수 (이벤트 전파를 막아 카드가 뒤집히는 현상 방지)
+    function playAudio(event, text) {
+        event.stopPropagation(); 
+        if (!text) return;
+        
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'en-US'; // 언어: 미국 영어
+        utterance.rate = 1.0; // 속도
+        window.speechSynthesis.speak(utterance);
+    }
+
+    function updateCardDisplay() {
+        const counter = document.getElementById('counter');
+        const frontText = document.getElementById('frontText');
+        const backText = document.getElementById('backText');
+        const frontCategory = document.getElementById('frontCategory');
+        const backCategory = document.getElementById('backCategory');
+        
+        const frontSpeakBtn = document.getElementById('frontSpeakBtn');
+        const backSpeakBtn = document.getElementById('backSpeakBtn');
+
+        if (currentList.length === 0) {
+            counter.innerText = '0 / 0';
+            frontText.innerText = '조건에 맞는 단어가 없습니다.';
+            backText.innerText = '조건을 변경해주세요.';
+            frontCategory.innerText = '-';
+            backCategory.innerText = '-';
+            frontSpeakBtn.style.display = 'none';
+            backSpeakBtn.style.display = 'none';
+            return;
+        }
+
+        counter.innerText = `${currentIndex + 1} / ${currentList.length}`;
+        const word = currentList[currentIndex];
+        const qToA = document.getElementById('qaToggle').checked;
+        
+        if (qToA) {
+            frontText.innerText = word.question;
+            backText.innerText = word.answer;
+            
+            // 영어가 앞면일 때: 앞면에만 스피커 버튼 표시
+            frontSpeakBtn.style.display = 'flex';
+            frontSpeakBtn.dataset.text = word.question;
+            backSpeakBtn.style.display = 'none';
+        } else {
+            frontText.innerText = word.answer;
+            backText.innerText = word.question;
+            
+            // 영어가 뒷면일 때: 뒷면에만 스피커 버튼 표시
+            frontSpeakBtn.style.display = 'none';
+            backSpeakBtn.style.display = 'flex';
+            backSpeakBtn.dataset.text = word.question;
+        }
+
+        frontText.className = `word-text font-${currentFontSize}`;
+        backText.className = `word-text font-${currentFontSize}`;
+        
+        frontCategory.innerText = word.category;
+        backCategory.innerText = word.category;
+    }
+
+    function setFontSize(size, btnElement) {
+        currentFontSize = size;
+        document.querySelectorAll('.btn-size').forEach(btn => btn.classList.remove('active'));
+        if(btnElement) btnElement.classList.add('active');
+        updateCardDisplay();
+    }
+
+    function flipCard() {
+        if (currentList.length === 0 || isAnimating) return;
+        isFlipped = !isFlipped;
+        document.getElementById('flashcard').classList.toggle('is-flipped', isFlipped);
+    }
+
+    function resetFlip() {
+        isFlipped = false;
+        document.getElementById('flashcard').classList.remove('is-flipped');
+    }
+
+    function handleEvaluation(status, direction) {
+        if (currentList.length === 0 || isAnimating) return;
+        isAnimating = true;
+
+        const now = new Date();
+        const dateString = now.getFullYear() + '.' + (now.getMonth() + 1) + '.' + now.getDate();
+        currentList[currentIndex].status = status;
+        currentList[currentIndex].studyDate = dateString;
+        
+        updateCounts();
+        renderHistoryTable(); 
+
+        const wrapper = document.getElementById('cardWrapper');
+        wrapper.style.transition = 'transform 0.3s cubic-bezier(0.4, 0.2, 0.2, 1), opacity 0.3s ease';
+        
+        if (direction === 'left') wrapper.classList.add('fly-out-left');
+        else if (direction === 'right') wrapper.classList.add('fly-out-right');
+        else if (direction === 'up') wrapper.classList.add('fly-out-up');
+        else wrapper.classList.add('fly-out-left'); 
+
+        setTimeout(() => {
+            if (currentIndex < currentList.length - 1) {
+                currentIndex++;
+                resetFlip();
+                updateCardDisplay();
+                
+                wrapper.style.transition = 'none';
+                wrapper.className = 'card-wrapper'; 
+                wrapper.style.opacity = '0';
+                wrapper.style.transform = 'scale(0.8)';
+                
+                void wrapper.offsetWidth; 
+                
+                wrapper.style.transition = 'transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s ease';
+                wrapper.style.opacity = '1';
+                wrapper.style.transform = 'scale(1)';
+                
+                setTimeout(() => { 
+                    isAnimating = false; 
+                    wrapper.style.transform = ''; 
+                }, 300);
+            } else {
+                wrapper.style.transition = 'none';
+                wrapper.className = 'card-wrapper';
+                isAnimating = false;
+                alert('현재 목록의 마지막 단어입니다!');
+            }
+        }, 300);
+    }
+
+    function handleNextCard() {
+        if (currentList.length === 0 || isAnimating || currentIndex >= currentList.length - 1) return;
+        isAnimating = true;
+        const wrapper = document.getElementById('cardWrapper');
+        
+        wrapper.style.transition = 'transform 0.3s cubic-bezier(0.4, 0.2, 0.2, 1), opacity 0.3s ease';
+        wrapper.classList.add('fly-out-left');
+        
+        setTimeout(() => {
+            currentIndex++;
+            resetFlip();
+            updateCardDisplay();
+            
+            wrapper.style.transition = 'none';
+            wrapper.className = 'card-wrapper';
+            wrapper.style.opacity = '0';
+            wrapper.style.transform = 'scale(0.8)';
+            
+            void wrapper.offsetWidth; 
+            
+            wrapper.style.transition = 'transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s ease';
+            wrapper.style.opacity = '1';
+            wrapper.style.transform = 'scale(1)';
+            
+            setTimeout(() => { isAnimating = false; wrapper.style.transform = ''; }, 300);
+        }, 300); 
+    }
+
+    function handlePrevCard() {
+        if (currentList.length === 0 || isAnimating || currentIndex <= 0) return;
+        isAnimating = true;
+        const wrapper = document.getElementById('cardWrapper');
+        
+        wrapper.style.transition = 'transform 0.3s cubic-bezier(0.4, 0.2, 0.2, 1), opacity 0.3s ease';
+        wrapper.classList.add('fly-out-down'); 
+        
+        setTimeout(() => {
+            currentIndex--;
+            resetFlip();
+            updateCardDisplay();
+            
+            wrapper.style.transition = 'none';
+            wrapper.className = 'card-wrapper';
+            wrapper.style.opacity = '0';
+            wrapper.style.transform = 'scale(1.2)'; 
+            
+            void wrapper.offsetWidth;
+            
+            wrapper.style.transition = 'transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s ease';
+            wrapper.style.opacity = '1';
+            wrapper.style.transform = 'scale(1)';
+            
+            setTimeout(() => { isAnimating = false; wrapper.style.transform = ''; }, 300);
+        }, 300);
+    }
+
+    function shuffleCards() {
+        if (currentList.length === 0 || isAnimating) return;
+        for (let i = currentList.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [currentList[i], currentList[j]] = [currentList[j], currentList[i]];
+        }
+        currentIndex = 0;
+        resetFlip();
+        updateCardDisplay();
+        renderHistoryTable(); 
+    }
+
+    function renderHistoryTable() {
+        const tbody = document.getElementById('historyTableBody');
+        tbody.innerHTML = '';
+        
+        currentList.forEach(word => {
+            const tr = document.createElement('tr');
+            
+            if (word.status === '모름') tr.className = 'bg-unknown';
+            else if (word.status === '헷갈림') tr.className = 'bg-confused';
+            else if (word.status === '알았음') tr.className = 'bg-known';
+
+            tr.innerHTML = `
+                <td>${word.category}</td>
+                <td style="text-align:left; font-weight:bold;">${word.question}</td>
+                <td style="text-align:left;">${word.answer}</td>
+                <td>${word.status}</td>
+                <td style="color:#555;">${word.studyDate}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    function toggleHistory() {
+        const container = document.getElementById('historyContainer');
+        if (container.style.display === 'none' || container.style.display === '') {
+            container.style.display = 'block';
+            renderHistoryTable(); 
+        } else {
+            container.style.display = 'none';
+        }
+    }
+
+    function downloadCSV() {
+        let csvContent = "\uFEFF단원,문제,정답,상태,학습일시\n";
+        
+        allWords.forEach(word => {
+            let c = `"${word.category}"`;
+            let q = `"${word.question.replace(/"/g, '""')}"`;
+            let a = `"${word.answer.replace(/"/g, '""')}"`;
+            let s = `"${word.status}"`;
+            let d = `"${word.studyDate}"`;
+            
+            csvContent += `${c},${q},${a},${s},${d}\n`;
+        });
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.setAttribute("href", url);
+        
+        const now = new Date();
+        const dateStr = now.getFullYear() + String(now.getMonth() + 1).padStart(2, '0') + String(now.getDate()).padStart(2, '0');
+        link.setAttribute("download", `미사이든학원_학습기록_${dateStr}.csv`);
+        
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
+    function initSwipeGesture() {
+        const scene = document.getElementById('cardScene');
+        let startX = 0;
+        let startY = 0;
+
+        scene.addEventListener('pointerdown', (e) => {
+            if (isAnimating) return; 
+            startX = e.clientX;
+            startY = e.clientY;
+            scene.setPointerCapture(e.pointerId);
+        });
+
+        scene.addEventListener('pointerup', (e) => {
+            if (isAnimating) return;
+            const endX = e.clientX;
+            const endY = e.clientY;
+            
+            const diffX = endX - startX;
+            const diffY = endY - startY;
+
+            if (Math.abs(diffX) > 40 || Math.abs(diffY) > 40) {
+                if (Math.abs(diffX) > Math.abs(diffY)) {
+                    if (diffX > 0) handleEvaluation('알았음', 'right'); 
+                    else handleEvaluation('모름', 'left'); 
+                } else {
+                    if (diffY < 0) handleEvaluation('헷갈림', 'up'); 
+                    else handlePrevCard(); 
+                }
+            } 
+            else if (Math.abs(diffX) < 10 && Math.abs(diffY) < 10) {
+                flipCard();
+            }
+        });
+    }
+
+    document.addEventListener('keydown', (e) => {
+        if (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'ArrowDown') { 
+            e.preventDefault(); 
+            flipCard(); 
+        }
+        else if (e.code === 'ArrowLeft') { handlePrevCard(); }
+        else if (e.code === 'ArrowRight') { handleNextCard(); }
+        else if (e.key === '1') { handleEvaluation('모름', 'left'); }
+        else if (e.key === '2') { handleEvaluation('헷갈림', 'up'); }
+        else if (e.key === '3') { handleEvaluation('알았음', 'right'); }
+        else if (e.key.toLowerCase() === 's') { shuffleCards(); }
+    });
+</script>
+</body>
+</html>
